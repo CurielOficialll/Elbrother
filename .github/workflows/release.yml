@@ -37,9 +37,9 @@ jobs:
         run: |
           $ver = "${{ github.ref_name }}".TrimStart("v")
           vpk pack -u elbrother -v $ver -p dist/win-unpacked -e "Elbrother POS.exe"
-        shell: pwsh
+        shell: powershell
 
       - name: Upload to GitHub Releases
         run: |
           vpk upload github -r ${{ github.repository }} -t ${{ secrets.GITHUB_TOKEN }} -p Releases
-        shell: pwsh
+        shell: powershell
