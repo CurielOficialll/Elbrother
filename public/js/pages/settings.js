@@ -32,7 +32,7 @@ window.SettingsPage = {
         <div class="card" style="margin-bottom:16px" id="update-card">
           <div class="card-header"><span class="card-title">Actualización de Software</span></div>
           <div style="margin-bottom:12px">
-            <div id="update-status" style="color:var(--on-surface-variant);margin-bottom:8px">Versión actual: v2.5.0</div>
+            <div id="update-status" style="color:var(--on-surface-variant);margin-bottom:8px">Versión actual: v${window.velopack ? await window.velopack.getAppVersion() : '2.5.1 (dev)'}</div>
             <div id="update-progress-container" style="display:none;margin-bottom:8px">
               <div style="height:4px;background:var(--outline-variant);border-radius:2px;overflow:hidden">
                 <div id="update-progress-bar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s"></div>

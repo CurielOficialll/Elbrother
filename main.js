@@ -79,6 +79,7 @@ function createWindow() {
 
 // IPC Handlers for DB Management
 ipcMain.handle('get-db-path', () => getSavedDbPath());
+ipcMain.handle('get-app-version', () => app.getVersion());
 
 ipcMain.handle('select-db-path', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {

@@ -77,9 +77,10 @@ async function start(config = {}) {
 
   // Start
   server.listen(PORT, () => {
+    const pkg = require('./package.json');
     console.log('');
     console.log('  ╔══════════════════════════════════════════╗');
-    console.log('  ║     🔵  ELBROTHER POS v2.5.0            ║');
+    console.log(`  ║     🔵  ELBROTHER POS v${pkg.version}            ║`);
     console.log('  ║     Sistema de Inventario y Ventas       ║');
     console.log('  ╠══════════════════════════════════════════╣');
     console.log(`  ║     🌐  http://localhost:${PORT}            ║`);

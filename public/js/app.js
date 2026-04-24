@@ -32,6 +32,15 @@ window.App = {
     } catch (e) {
       console.error('Error loading config:', e);
     }
+    
+    // Version
+    if (window.velopack && window.velopack.getAppVersion) {
+      try {
+        const version = await window.velopack.getAppVersion();
+        const el = document.getElementById('app-version');
+        if (el) el.textContent = `v${version}`;
+      } catch (e) { console.error('Error loading version:', e); }
+    }
 
     // Socket.IO
     try {
