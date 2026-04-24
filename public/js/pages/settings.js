@@ -20,6 +20,20 @@ window.SettingsPage = {
             <button class="btn btn-outline btn-sm" onclick="SettingsPage.refreshBCV()"><span class="material-symbols-outlined">refresh</span>Actualizar</button>
           </div>
         </div>
+        <div class="card" style="margin-bottom:16px" id="update-card">
+          <div class="card-header"><span class="card-title">Actualización de Software</span></div>
+          <div style="margin-bottom:12px">
+            <div id="update-status" style="color:var(--on-surface-variant);margin-bottom:8px">Versión actual: v2.5.0</div>
+            <div id="update-progress-container" style="display:none;margin-bottom:8px">
+              <div style="height:4px;background:var(--outline-variant);border-radius:2px;overflow:hidden">
+                <div id="update-progress-bar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s"></div>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" id="btn-check-update" onclick="SettingsPage.checkUpdate()">
+              <span class="material-symbols-outlined">update</span>Buscar Actualización
+            </button>
+          </div>
+        </div>
         <div class="card">
           <div class="card-header"><span class="card-title">Actividad Reciente</span></div>
           <div id="activity-log">Cargando...</div>
@@ -49,5 +63,60 @@ window.SettingsPage = {
       Store.set('bcvRate', result.rate);
       App.navigate('settings');
     } catch(e) { Toast.error(e.message); }
+  },
+  async checkUpdate() {
+    if (!window.velopack) return Toast.error('El sistema de actualizaciones solo está disponible en la versión instalada.');
+    
+    const btn = document.getElementById('btn-check-update');
+    const status = document.getElementById('update-status');
+    
+    try {
+      btn.disabled = true;
+      status.innerText = 'Buscando actualizaciones...';
+      
+      const updateInfo = await window.velopack.checkForUpdates();
+      
+      if (!updateInfo) {
+        status.innerText = 'Tienes la versión más reciente.';
+        btn.disabled = false;
+        return;
+      }
+      
+      status.innerHTML = `<span style="color:var(--primary);font-weight:600">Nueva versión disponible: ${updateInfo.TargetFullRelease.Version}</span>`;
+      btn.innerHTML = '<span class="material-symbols-outlined">download</span>Descargar ahora';
+      btn.disabled = false;
+      btn.onclick = () => SettingsPage.downloadUpdate(updateInfo);
+      
+    } catch(e) {
+      status.innerText = 'Error al buscar actualizaciones.';
+      btn.disabled = false;
+      Toast.error(e.message);
+    }
+  },
+  async downloadUpdate(updateInfo) {
+    const btn = document.getElementById('btn-check-update');
+    const status = document.getElementById('update-status');
+    const progressContainer = document.getElementById('update-progress-container');
+    const progressBar = document.getElementById('update-progress-bar');
+    
+    try {
+      btn.disabled = true;
+      status.innerText = 'Descargando actualización...';
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '50%'; // Velopack Node SDK doesn't always give progress easily in one call
+      
+      await window.velopack.downloadUpdate(updateInfo);
+      
+      progressBar.style.width = '100%';
+      status.innerText = 'Descarga completada. Listo para instalar.';
+      btn.innerHTML = '<span class="material-symbols-outlined">restart_alt</span>Reiniciar y Actualizar';
+      btn.disabled = false;
+      btn.onclick = () => window.velopack.applyUpdate(updateInfo);
+      
+    } catch(e) {
+      status.innerText = 'Error al descargar la actualización.';
+      btn.disabled = false;
+      Toast.error(e.message);
+    }
   }
 };

@@ -8,12 +8,13 @@ let dbPath = '';
 async function initConnection() {
   if (db) return db;
 
-  const dbDir = path.join(__dirname, '..', '..', 'data');
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
+  const defaultDbDir = path.join(__dirname, '..', '..', 'data');
+  dbPath = process.env.DB_PATH || path.join(defaultDbDir, 'elbrother.db');
+  
+  const targetDir = path.dirname(dbPath);
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
   }
-
-  dbPath = path.join(dbDir, 'elbrother.db');
   const SQL = await initSqlJs();
 
   if (fs.existsSync(dbPath)) {

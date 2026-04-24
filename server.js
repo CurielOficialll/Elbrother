@@ -19,7 +19,10 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('io', io);
 
-async function start() {
+async function start(config = {}) {
+  if (config.dbPath) {
+    process.env.DB_PATH = config.dbPath;
+  }
   // Init database
   await initConnection();
   const { initDatabase } = require('./src/database/schema');
@@ -126,7 +129,11 @@ async function start() {
   });
 }
 
-start().catch(err => {
-  console.error('Error starting server:', err);
-  process.exit(1);
-});
+module.exports = { start };
+
+if (require.main === module) {
+  start().catch(err => {
+    console.error('Error starting server:', err);
+    process.exit(1);
+  });
+}
