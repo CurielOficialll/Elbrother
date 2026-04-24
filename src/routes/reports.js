@@ -66,7 +66,27 @@ router.get('/sales-by-payment', authenticateToken, (req, res) => {
 router.get('/top-products', authenticateToken, (req, res) => {
   try {
     const db = getDb();
-    const data = db.prepare(`SELECT p.name, p.sell_price, SUM(si.quantity) as qty, SUM(si.total) as revenue FROM sale_items si JOIN products p ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE s.status='completed' AND s.created_at >= date('now','-30 days') GROUP BY si.product_id ORDER BY qty DESC LIMIT 10`).all();
+    const { startDate, endDate } = req.query;
+    
+    let query = `
+      SELECT p.name, SUM(si.quantity) as total_qty, SUM(si.total) as total_amount 
+      FROM sale_items si 
+      JOIN products p ON si.product_id = p.id 
+      JOIN sales s ON si.sale_id = s.id 
+      WHERE s.status='completed'
+    `;
+    
+    const params = [];
+    if (startDate && endDate) {
+      query += ` AND s.created_at BETWEEN ? AND ?`;
+      params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+    } else {
+      query += ` AND s.created_at >= date('now','-30 days')`;
+    }
+    
+    query += ` GROUP BY si.product_id ORDER BY total_qty DESC LIMIT 10`;
+    
+    const data = db.prepare(query).all(...params);
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

@@ -50,9 +50,17 @@ window.SettingsPage = {
   },
   async saveConfig() {
     try {
-      const taxRateVal = String(parseFloat(document.getElementById('cfg-tax').value)/100);
-      await API.put('/api/system/config', { business_name: document.getElementById('cfg-name').value, tax_rate: taxRateVal, currency: document.getElementById('cfg-currency').value });
-      Store.set('taxRate', parseFloat(taxRateVal));
+      const taxInput = document.getElementById('cfg-tax').value;
+      const taxRateNum = (parseFloat(taxInput) || 0) / 100;
+      const taxRateVal = String(taxRateNum);
+      
+      await API.put('/api/system/config', { 
+        business_name: document.getElementById('cfg-name').value, 
+        tax_rate: taxRateVal, 
+        currency: document.getElementById('cfg-currency').value 
+      });
+      
+      Store.set('taxRate', taxRateNum);
       Toast.success('Configuración guardada');
     } catch(e) { Toast.error(e.message); }
   },

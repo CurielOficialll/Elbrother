@@ -26,7 +26,7 @@ window.App = {
     try {
       const config = await API.get('/api/system/config');
       if (config) {
-        Store.set('taxRate', parseFloat(config.tax_rate) || 0.16);
+        Store.set('taxRate', config.tax_rate !== undefined && config.tax_rate !== null ? parseFloat(config.tax_rate) : 0.16);
         if (config.bcv_rate) Store.set('bcvRate', parseFloat(config.bcv_rate));
       }
     } catch (e) {

@@ -51,7 +51,7 @@ window.POSPage = {
   renderTotals() {
     const cart = Store.get('cart');
     const rate = Store.get('bcvRate') || 483.87;
-    const taxRate = Store.get('taxRate') !== undefined ? Store.get('taxRate') : 0.16;
+    const taxRate = (Store.get('taxRate') !== undefined && Store.get('taxRate') !== null) ? parseFloat(Store.get('taxRate')) : 0.16;
     const subtotalUsd = Store.getCartTotal();
     const taxUsd = subtotalUsd * taxRate;
     const totalUsd = subtotalUsd + taxUsd;
