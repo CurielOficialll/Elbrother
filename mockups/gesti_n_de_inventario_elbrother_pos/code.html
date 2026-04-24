@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Elbrother POS - Inventory Management</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#005f6d",
+                    "tertiary": "#ffe2da",
+                    "surface-dim": "#111316",
+                    "on-surface": "#e2e2e6",
+                    "on-tertiary-fixed": "#390c00",
+                    "on-error-container": "#ffdad6",
+                    "inverse-primary": "#006877",
+                    "surface-container-lowest": "#0c0e11",
+                    "on-surface-variant": "#bac9cd",
+                    "secondary-fixed": "#65ff90",
+                    "surface-container-low": "#1a1c1f",
+                    "secondary-fixed-dim": "#00e46d",
+                    "on-tertiary-container": "#9d3100",
+                    "surface": "#111316",
+                    "on-secondary": "#003916",
+                    "surface-container-highest": "#333538",
+                    "on-primary": "#00363f",
+                    "surface-variant": "#333538",
+                    "tertiary-fixed-dim": "#ffb59c",
+                    "on-primary-fixed-variant": "#004e5a",
+                    "outline-variant": "#3b494c",
+                    "secondary-container": "#05f476",
+                    "primary-container": "#00e0ff",
+                    "inverse-surface": "#e2e2e6",
+                    "secondary": "#c5ffca",
+                    "on-secondary-fixed": "#00210a",
+                    "surface-container": "#1e2023",
+                    "on-background": "#e2e2e6",
+                    "outline": "#859397",
+                    "error-container": "#93000a",
+                    "primary": "#baf2ff",
+                    "surface-container-high": "#282a2d",
+                    "primary-fixed": "#a5eeff",
+                    "on-secondary-fixed-variant": "#005323",
+                    "error": "#ffb4ab",
+                    "on-tertiary": "#5c1900",
+                    "tertiary-container": "#ffbda7",
+                    "tertiary-fixed": "#ffdbcf",
+                    "on-secondary-container": "#006a2f",
+                    "surface-bright": "#37393d",
+                    "on-error": "#690005",
+                    "primary-fixed-dim": "#00daf8",
+                    "surface-tint": "#00daf8",
+                    "on-primary-fixed": "#001f25",
+                    "inverse-on-surface": "#2f3034",
+                    "on-tertiary-fixed-variant": "#832700",
+                    "background": "#111316"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "touch-target-min": "48px",
+                    "card-padding": "20px",
+                    "unit": "8px",
+                    "gutter": "16px",
+                    "margin-edge": "24px"
+            },
+            "fontFamily": {
+                    "price-display": [
+                            "Space Grotesk"
+                    ],
+                    "label-caps": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-xl": [
+                            "Inter"
+                    ],
+                    "price-sm": [
+                            "Space Grotesk"
+                    ]
+            },
+            "fontSize": {
+                    "price-display": [
+                            "40px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.1em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-md": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-xl": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "price-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "1",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom styles to fulfill brand guidelines that are tricky with pure utility classes */
+        .btn-press:active {
+            transform: scale(0.98);
+        }
+        .input-underline {
+            border-bottom: 2px solid theme('colors.outline-variant');
+            transition: all 0.2s ease-in-out;
+        }
+        .input-underline:focus {
+            border: 2px solid theme('colors.primary-container');
+            outline: none;
+            background-color: theme('colors.surface-container');
+        }
+        .input-underline:focus-visible {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md min-h-screen font-sans selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 h-16 w-full fixed top-0 z-50 bg-[#121417] dark:bg-[#121417] border-b border-[#26292E] shadow-none">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black text-[#00E0FF] italic tracking-tighter">Elbrother</span>
+</div>
+<div class="flex items-center gap-6 text-[#00E0FF] dark:text-[#00E0FF] font-['Inter'] uppercase tracking-wider font-bold text-sm">
+<span>BCV: 36.50 Bs.</span>
+<span>System: Online</span>
+<button class="hover:bg-[#1A1C1E] transition-colors p-2 rounded-full active:scale-95 duration-100 flex items-center justify-center text-gray-400">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col pt-20 bg-[#1A1C1E] dark:bg-[#1A1C1E] w-64 border-r border-[#26292E] shadow-none z-40">
+<div class="px-6 pb-6 border-b border-[#26292E] mb-4">
+<h2 class="text-xl font-black text-[#00E0FF] uppercase tracking-wide">Elbrother</h2>
+<p class="font-['Inter'] font-medium text-sm text-gray-500">Terminal 01</p>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="flex flex-col font-['Inter'] font-medium text-sm">
+<!-- Dashboard (Inactive) -->
+<li>
+<a class="text-gray-500 flex items-center gap-4 px-6 py-4 hover:bg-[#26292E] hover:text-[#00E0FF] transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                        Dashboard
+                    </a>
+</li>
+<!-- POS (Inactive) -->
+<li>
+<a class="text-gray-500 flex items-center gap-4 px-6 py-4 hover:bg-[#26292E] hover:text-[#00E0FF] transition-colors" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+                        POS
+                    </a>
+</li>
+<!-- Inventory (Active) -->
+<li>
+<a class="bg-[#26292E] text-[#00E0FF] border-l-4 border-[#00E0FF] flex items-center gap-4 px-6 py-4 translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+                        Inventory
+                    </a>
+</li>
+<!-- Clients (Inactive) -->
+<li>
+<a class="text-gray-500 flex items-center gap-4 px-6 py-4 hover:bg-[#26292E] hover:text-[#00E0FF] transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+                        Clients
+                    </a>
+</li>
+<!-- Reports (Inactive) -->
+<li>
+<a class="text-gray-500 flex items-center gap-4 px-6 py-4 hover:bg-[#26292E] hover:text-[#00E0FF] transition-colors" href="#">
+<span class="material-symbols-outlined">assessment</span>
+                        Reports
+                    </a>
+</li>
+</ul>
+</div>
+<div class="border-t border-[#26292E] mt-auto">
+<a class="text-gray-500 flex items-center gap-4 px-6 py-4 hover:bg-[#26292E] hover:text-[#00E0FF] font-['Inter'] font-medium text-sm transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-16 pl-64 pb-8 min-h-screen">
+<div class="p-8">
+<!-- Low Stock Alert Banner -->
+<div class="bg-surface-container-highest border-l-4 border-error p-4 mb-8 flex items-center justify-between rounded shadow-sm">
+<div class="flex items-center gap-4">
+<div class="bg-error/20 p-2 rounded-full text-error flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div>
+<h3 class="font-label-caps text-label-caps text-error mb-1">Low Stock Alert</h3>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">3 items have fallen below their minimum stock threshold.</p>
+</div>
+</div>
+<button class="font-label-caps text-label-caps text-error hover:text-on-error-container transition-colors uppercase tracking-wider">
+                    View Items
+                </button>
+</div>
+<!-- Header & Actions -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-background mb-2 tracking-tight">Inventory Management</h1>
+<p class="text-on-surface-variant font-body-md text-body-md text-sm">Manage products, pricing, and stock levels.</p>
+</div>
+<div class="flex gap-4">
+<button class="flex items-center gap-2 border border-outline-variant text-on-surface-variant font-label-caps text-label-caps px-4 py-3 rounded hover:border-primary-container hover:text-primary-container transition-colors btn-press">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                        View Price History
+                    </button>
+<button class="flex items-center gap-2 border border-outline-variant text-on-surface-variant font-label-caps text-label-caps px-4 py-3 rounded hover:border-primary-container hover:text-primary-container transition-colors btn-press">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+                        Import from Excel
+                    </button>
+<button class="flex items-center gap-2 bg-primary-container text-on-primary-container font-label-caps text-label-caps px-6 py-3 rounded font-bold hover:bg-primary-fixed transition-colors btn-press shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Add Product
+                    </button>
+</div>
+</div>
+<!-- Search & Filters Zone -->
+<div class="flex gap-4 mb-8 bg-surface-container-low p-4 rounded-xl border border-surface-variant">
+<!-- Search Input per brand guidelines -->
+<div class="relative flex-1 flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-on-surface-variant">search</span>
+<input class="w-full bg-surface input-underline text-on-surface font-body-md text-body-md py-4 pl-12 pr-4 rounded-t min-h-[touch-target-min] placeholder-on-surface-variant" placeholder="Search by barcode, name, or brand..." type="text"/>
+</div>
+<!-- Category Filter -->
+<div class="relative w-64">
+<select class="w-full appearance-none bg-surface input-underline text-on-surface font-body-md text-body-md py-4 pl-4 pr-10 rounded-t min-h-[touch-target-min] cursor-pointer focus:border-primary-container focus:outline-none focus:ring-0">
+<option value="">All Categories</option>
+<option value="beverages">Beverages</option>
+<option value="snacks">Snacks</option>
+<option value="dairy">Dairy &amp; Groceries</option>
+<option value="cleaning">Cleaning Supplies</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+<!-- Filter Toggle Button -->
+<button class="flex items-center justify-center w-[touch-target-min] h-[touch-target-min] bg-surface border border-outline-variant rounded hover:border-primary-container text-on-surface-variant hover:text-primary-container transition-colors btn-press">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+<!-- Product Table (Data Grid) -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant shadow-lg">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-highest border-b border-outline-variant">
+<tr>
+<th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider w-32">Barcode</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Product Name</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider w-40">Category</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider w-32 text-right">Stock</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider w-32 text-right">Min Stock</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider w-32 text-right">Cost</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider w-32 text-right">Sale Price</th>
+<th class="py-4 px-4 w-16"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<!-- Row 1: Healthy Stock -->
+<tr class="hover:bg-surface-container-high transition-colors group cursor-pointer">
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-sm">75010111</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface font-semibold">Coca-Cola Original 2L</td>
+<td class="py-4 px-6">
+<span class="inline-block px-2 py-1 bg-surface-variant text-on-surface-variant font-label-caps text-[10px] rounded uppercase tracking-wider">Beverages</span>
+</td>
+<td class="py-4 px-6 text-right flex items-center justify-end gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-container shadow-[0_0_8px_rgba(5,244,118,0.5)]"></span>
+<span class="font-price-sm text-price-sm text-on-surface">45</span>
+</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right">10</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right text-sm">1.20</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-primary-container text-right">2.00</td>
+<td class="py-4 px-4 text-center">
+<button class="text-on-surface-variant hover:text-primary-container opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Low Stock (Warning) -->
+<tr class="bg-error/5 hover:bg-error/10 transition-colors group cursor-pointer border-l-2 border-l-error">
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-sm pl-5">75010222</td>
+<td class="py-4 px-6 font-body-md text-body-md text-error font-semibold flex items-center gap-2">
+                                Lay's Classic Potato Chips 150g
+                                <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-block px-2 py-1 bg-surface-variant text-on-surface-variant font-label-caps text-[10px] rounded uppercase tracking-wider">Snacks</span>
+</td>
+<td class="py-4 px-6 text-right flex items-center justify-end gap-2">
+<span class="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.5)]"></span>
+<span class="font-price-sm text-price-sm text-error font-bold">4</span>
+</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right">15</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right text-sm">0.80</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-primary-container text-right">1.50</td>
+<td class="py-4 px-4 text-center">
+<button class="text-on-surface-variant hover:text-primary-container opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Healthy Stock -->
+<tr class="hover:bg-surface-container-high transition-colors group cursor-pointer">
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-sm">75010333</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface font-semibold">Polar Pilsen 355ml Can</td>
+<td class="py-4 px-6">
+<span class="inline-block px-2 py-1 bg-surface-variant text-on-surface-variant font-label-caps text-[10px] rounded uppercase tracking-wider">Beverages</span>
+</td>
+<td class="py-4 px-6 text-right flex items-center justify-end gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-container shadow-[0_0_8px_rgba(5,244,118,0.5)]"></span>
+<span class="font-price-sm text-price-sm text-on-surface">120</span>
+</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right">48</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right text-sm">0.60</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-primary-container text-right">1.00</td>
+<td class="py-4 px-4 text-center">
+<button class="text-on-surface-variant hover:text-primary-container opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Out of Stock (Desaturated) -->
+<tr class="hover:bg-surface-container-high transition-colors group cursor-pointer opacity-50">
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-sm">75010444</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface line-through">Harina P.A.N. Blanco 1kg</td>
+<td class="py-4 px-6">
+<span class="inline-block px-2 py-1 bg-surface-variant text-on-surface-variant font-label-caps text-[10px] rounded uppercase tracking-wider">Dairy &amp; Groceries</span>
+</td>
+<td class="py-4 px-6 text-right flex items-center justify-end gap-2">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-price-sm text-price-sm text-on-surface-variant">0</span>
+</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right">20</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right text-sm">0.90</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-primary-container text-right">1.20</td>
+<td class="py-4 px-4 text-center">
+<button class="text-on-surface-variant hover:text-primary-container opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: Low Stock (Warning) -->
+<tr class="bg-error/5 hover:bg-error/10 transition-colors group cursor-pointer border-l-2 border-l-error">
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-sm pl-5">75010555</td>
+<td class="py-4 px-6 font-body-md text-body-md text-error font-semibold flex items-center gap-2">
+                                Clorox Bleach Original 1L
+                                <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-block px-2 py-1 bg-surface-variant text-on-surface-variant font-label-caps text-[10px] rounded uppercase tracking-wider">Cleaning Supplies</span>
+</td>
+<td class="py-4 px-6 text-right flex items-center justify-end gap-2">
+<span class="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.5)]"></span>
+<span class="font-price-sm text-price-sm text-error font-bold">2</span>
+</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right">12</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-on-surface-variant text-right text-sm">1.50</td>
+<td class="py-4 px-6 font-price-sm text-price-sm text-primary-container text-right">2.50</td>
+<td class="py-4 px-4 text-center">
+<button class="text-on-surface-variant hover:text-primary-container opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination Footer inside table container -->
+<div class="bg-surface-container-highest border-t border-outline-variant p-4 flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant text-sm">Showing 1-5 of 1,248 products</span>
+<div class="flex gap-2">
+<button class="p-2 border border-outline-variant rounded text-on-surface-variant hover:bg-surface hover:text-primary-container disabled:opacity-50 btn-press">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="p-2 border border-outline-variant rounded text-on-surface-variant hover:bg-surface hover:text-primary-container btn-press">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-center px-4 bg-opacity-90 backdrop-blur-sm bg-[#121417] dark:bg-[#121417] h-8 border-t border-[#26292E] shadow-none">
+<div class="flex gap-6 font-mono text-xs uppercase tracking-tighter text-gray-600">
+<span>Drawer: Open</span>
+<span>Shift: Active</span>
+</div>
+<div class="font-mono text-xs uppercase tracking-tighter text-gray-600">
+            v2.4.0-build.88
+        </div>
+</footer>
+</body></html>

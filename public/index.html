@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elbrother POS</title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div id="login-screen" class="hidden"></div>
+  <div id="app-shell" class="hidden">
+    <header id="app-header" class="app-header">
+      <div class="header-left">
+        <button class="icon-btn sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('sidebar-open')">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <span class="brand-logo">ELBROTHER</span>
+      </div>
+      <div class="header-right">
+        <div class="header-badge"><span class="material-symbols-outlined" style="font-size:16px">currency_exchange</span> BCV: <span id="bcv-rate-value">36.50</span> Bs/$</div>
+        <div class="header-badge header-badge--success"><span class="status-dot"></span>LOCAL</div>
+        <span id="user-name" class="user-label">Admin</span>
+        <button class="icon-btn" onclick="window.App.logout()" title="Salir"><span class="material-symbols-outlined">logout</span></button>
+      </div>
+    </header>
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-brand"><span class="brand-logo">ELBROTHER</span><p class="sidebar-sub">Terminal POS</p></div>
+      <div class="sidebar-nav">
+        <a href="#/dashboard" class="nav-item" data-page="dashboard"><span class="material-symbols-outlined">dashboard</span>Dashboard</a>
+        <a href="#/pos" class="nav-item" data-page="pos"><span class="material-symbols-outlined">point_of_sale</span>Punto de Venta</a>
+        <a href="#/inventory" class="nav-item" data-page="inventory"><span class="material-symbols-outlined">inventory_2</span>Inventario</a>
+        <a href="#/clients" class="nav-item" data-page="clients"><span class="material-symbols-outlined">group</span>Clientes</a>
+        <a href="#/purchases" class="nav-item" data-page="purchases"><span class="material-symbols-outlined">local_shipping</span>Compras</a>
+        <a href="#/cash" class="nav-item" data-page="cash"><span class="material-symbols-outlined">payments</span>Caja</a>
+        <a href="#/reports" class="nav-item" data-page="reports"><span class="material-symbols-outlined">assessment</span>Reportes</a>
+        <a href="#/calculator" class="nav-item" data-page="calculator"><span class="material-symbols-outlined">calculate</span>Calculadora</a>
+      </div>
+      <div class="sidebar-footer">
+        <a href="#/settings" class="nav-item" data-page="settings"><span class="material-symbols-outlined">settings</span>Configuración</a>
+      </div>
+    </nav>
+    <main id="main-content" class="main-content"><div id="page-content"></div></main>
+    <footer class="status-bar"><div><span id="cash-status">Caja: —</span> | <span id="shift-status">Turno: —</span></div><span>v2.5.0</span></footer>
+  </div>
+  <div id="toast-container" class="toast-container"></div>
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="window.App.closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()"><div id="modal-body"></div></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/utils/api.js"></script>
+  <script src="/js/utils/format.js"></script>
+  <script src="/js/utils/store.js"></script>
+  <script src="/js/components/sounds.js"></script>
+  <script src="/js/components/toast.js"></script>
+  <script src="/js/pages/login.js"></script>
+  <script src="/js/pages/dashboard.js"></script>
+  <script src="/js/pages/pos.js"></script>
+  <script src="/js/pages/inventory.js"></script>
+  <script src="/js/pages/clients.js"></script>
+  <script src="/js/pages/cash.js"></script>
+  <script src="/js/pages/reports.js"></script>
+  <script src="/js/pages/settings.js"></script>
+  <script src="/js/pages/purchases.js"></script>
+  <script src="/js/pages/calculator.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
