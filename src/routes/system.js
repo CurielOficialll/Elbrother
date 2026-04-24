@@ -63,4 +63,57 @@ router.get('/activity-log', authenticateToken, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/system/reset-production
+router.post('/reset-production', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const db = getDb();
+    const { saveDb } = require('../database/connection');
+
+    db.transaction(() => {
+      // 1. Eliminar ventas y sus detalles
+      db.prepare('DELETE FROM sale_items').run();
+      db.prepare('DELETE FROM sales').run();
+      
+      // 2. Eliminar movimientos de inventario
+      db.prepare('DELETE FROM stock_movements').run();
+      
+      // 3. Eliminar sesiones de caja y sus transacciones
+      db.prepare('DELETE FROM cash_transactions').run();
+      db.prepare('DELETE FROM cash_sessions').run();
+      
+      // 4. Eliminar créditos y pagos de clientes
+      db.prepare('DELETE FROM credit_payments').run();
+      db.prepare('DELETE FROM credits').run();
+      
+      // 5. Eliminar compras y sus detalles
+      db.prepare('DELETE FROM purchase_items').run();
+      db.prepare('DELETE FROM purchases').run();
+      
+      // 6. Eliminar cuentas por pagar a proveedores
+      db.prepare('DELETE FROM payable_payments').run();
+      db.prepare('DELETE FROM accounts_payable').run();
+      
+      // 7. Limpiar logs de actividad del sistema
+      db.prepare('DELETE FROM activity_logs').run();
+
+      // 8. Reiniciar los contadores de ID
+      const tables = [
+          'sales', 'sale_items', 'stock_movements', 'cash_sessions', 
+          'cash_transactions', 'credits', 'credit_payments', 
+          'purchases', 'purchase_items', 'accounts_payable', 
+          'payable_payments', 'activity_logs'
+      ];
+      for (const table of tables) {
+          db.prepare("DELETE FROM sqlite_sequence WHERE name = ?").run(table);
+      }
+
+      // 9. Resetear el stock de todos los productos a 0
+      db.prepare('UPDATE products SET stock = 0').run();
+    })();
+
+    saveDb();
+    res.json({ message: 'Sistema reseteado para producción correctamente' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

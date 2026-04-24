@@ -43,6 +43,18 @@ window.SettingsPage = {
             </button>
           </div>
         </div>
+        <div class="card" style="margin-bottom:16px; border: 1px solid var(--error-container)">
+          <div class="card-header"><span class="card-title" style="color:var(--error)">Mantenimiento Crítico</span></div>
+          <div style="margin-bottom:12px">
+            <p style="font-size:12px; color:var(--on-surface-variant); margin-bottom:12px">
+              Esta opción eliminará <b>TODAS</b> las ventas, movimientos y sesiones de caja (pruebas). 
+              Los productos, categorías y precios se mantendrán, pero el stock volverá a 0.
+            </p>
+            <button class="btn btn-outline" style="color:var(--error); border-color:var(--error)" onclick="SettingsPage.resetProduction()">
+              <span class="material-symbols-outlined">delete_forever</span>Limpiar Datos de Prueba
+            </button>
+          </div>
+        </div>
         <div class="card">
           <div class="card-header"><span class="card-title">Actividad Reciente</span></div>
           <div id="activity-log">Cargando...</div>
@@ -150,5 +162,15 @@ window.SettingsPage = {
     } catch(e) {
       Toast.error(e.message);
     }
+  },
+  async resetProduction() {
+    if (!confirm('¡ATENCIÓN! Se eliminarán todas las ventas y movimientos de prueba. El stock volverá a 0. ¿Deseas continuar?')) return;
+    if (!confirm('¿Estás COMPLETAMENTE seguro? Esta acción no se puede deshacer.')) return;
+    
+    try {
+      await API.post('/api/system/reset-production');
+      Toast.success('Sistema reseteado para producción');
+      setTimeout(() => location.reload(), 1500);
+    } catch(e) { Toast.error(e.message); }
   }
 };
