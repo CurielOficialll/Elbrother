@@ -20,6 +20,15 @@ window.SettingsPage = {
             <button class="btn btn-outline btn-sm" onclick="SettingsPage.refreshBCV()"><span class="material-symbols-outlined">refresh</span>Actualizar</button>
           </div>
         </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><span class="card-title">Ubicación de Base de Datos</span></div>
+          <div style="margin-bottom:12px">
+            <div id="db-path-display" style="font-family:monospace;font-size:12px;color:var(--on-surface-variant);margin-bottom:8px;word-break:break-all">${window.velopack ? await window.velopack.getDbPath() : 'Modo desarrollo'}</div>
+            <button class="btn btn-outline btn-sm" onclick="SettingsPage.changeDbPath()">
+              <span class="material-symbols-outlined">folder_open</span>Cambiar Ubicación
+            </button>
+          </div>
+        </div>
         <div class="card" style="margin-bottom:16px" id="update-card">
           <div class="card-header"><span class="card-title">Actualización de Software</span></div>
           <div style="margin-bottom:12px">
@@ -124,6 +133,21 @@ window.SettingsPage = {
     } catch(e) {
       status.innerText = 'Error al descargar la actualización.';
       btn.disabled = false;
+      Toast.error(e.message);
+    }
+  },
+  async changeDbPath() {
+    if (!window.velopack) return Toast.error('Esta función solo está disponible en la versión instalada.');
+    
+    if (!confirm('¿Estás seguro de cambiar la ubicación de la base de datos? El programa se reiniciará para aplicar los cambios.')) return;
+    
+    try {
+      const newPath = await window.velopack.selectDbPath();
+      if (newPath) {
+        Toast.success('Ubicación guardada. Reiniciando...');
+        setTimeout(() => location.reload(), 1500);
+      }
+    } catch(e) {
       Toast.error(e.message);
     }
   }

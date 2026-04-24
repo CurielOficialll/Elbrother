@@ -1,0 +1,46 @@
+name: Release Elbrother POS
+
+on:
+  push:
+    tags:
+      - 'v*' # Se activa cuando creas un tag como v2.5.1
+  workflow_dispatch: # Permite activarlo manualmente desde GitHub
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Electron App
+        run: npm run build:win
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Create Velopack Release
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart("v")
+          vpk pack -u elbrother -v $ver -p dist/win-unpacked -e "Elbrother POS.exe"
+        shell: pwsh
+
+      - name: Upload to GitHub Releases
+        run: |
+          vpk upload github -r ${{ github.repository }} -t ${{ secrets.GITHUB_TOKEN }} -p Releases
+        shell: pwsh
