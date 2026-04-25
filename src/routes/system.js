@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../database/connection');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { fetchBCVRate, getCurrentRate } = require('../services/bcv');
 
 // GET /api/system/config

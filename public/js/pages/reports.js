@@ -71,6 +71,21 @@ window.ReportsPage = {
             <div class="kpi-value" style="font-size:16px;animation:pulse 1s infinite">Cargando datos del período...</div>
           </div>
         </div>
+      </div>
+
+      <div class="card section-gap">
+        <div class="card-header">
+          <span class="card-title">Historial de Movimientos (Ventas)</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="date" id="movements-date-from" class="form-input" style="width:auto;padding:6px 10px;font-size:12px">
+            <span style="color:var(--outline)">a</span>
+            <input type="date" id="movements-date-to" class="form-input" style="width:auto;padding:6px 10px;font-size:12px">
+            <button class="btn btn-sm btn-primary" id="btn-load-movements"><span class="material-symbols-outlined" style="font-size:16px">search</span>Buscar</button>
+          </div>
+        </div>
+        <div id="movements-table-container" class="table-container">
+          <p style="padding:24px;text-align:center;color:var(--outline)">Selecciona un rango de fechas y presiona Buscar</p>
+        </div>
       </div>`;
     } catch(e) { 
       return `<div class="empty-state"><span class="material-symbols-outlined">error</span><p>${e.message}</p></div>`; 
@@ -114,8 +129,23 @@ window.ReportsPage = {
 
     btnApply.addEventListener('click', () => this.loadPeriodData());
     
-    // Initial load
+    // Initial load for reports
     this.loadPeriodData();
+
+    // Setup Movements section
+    const btnLoadMovements = document.getElementById('btn-load-movements');
+    const inputDateFrom = document.getElementById('movements-date-from');
+    const inputDateTo = document.getElementById('movements-date-to');
+    
+    // Default dates for movements (today)
+    const todayStr = new Date().toISOString().split('T')[0];
+    inputDateFrom.value = todayStr;
+    inputDateTo.value = todayStr;
+
+    btnLoadMovements.addEventListener('click', () => this.loadMovements());
+    
+    // Initial load for movements
+    this.loadMovements();
   },
 
   async loadPeriodData() {
@@ -211,6 +241,98 @@ window.ReportsPage = {
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<span class="material-symbols-outlined">filter_alt</span>Aplicar Filtro';
+    }
+  },
+
+  async loadMovements() {
+    const from = document.getElementById('movements-date-from').value;
+    const to = document.getElementById('movements-date-to').value;
+    const container = document.getElementById('movements-table-container');
+    const btn = document.getElementById('btn-load-movements');
+
+    if (!from || !to) return Toast.error('Selecciona un rango de fechas válido');
+
+    btn.disabled = true;
+    container.innerHTML = `<div style="text-align:center;padding:24px"><span class="material-symbols-outlined" style="animation:spin 1s linear infinite">sync</span><p style="color:var(--outline);margin-top:8px">Cargando movimientos...</p></div>`;
+
+    try {
+      // API expects endDate to be inclusive, so we append T23:59:59 to 'to' date
+      const toInclusive = `${to}T23:59:59.999Z`;
+      const fromStart = `${from}T00:00:00.000Z`;
+      
+      const sales = await API.get(`/api/sales?from=${fromStart}&to=${toInclusive}&limit=500`);
+      const rate = Store.get('bcvRate') || 483.87;
+
+      if (!sales || sales.length === 0) {
+        container.innerHTML = '<p style="padding:24px;text-align:center;color:var(--outline)">No se encontraron movimientos en este rango de fechas</p>';
+        return;
+      }
+
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Recibo</th>
+              <th>Fecha y Hora</th>
+              <th>Vendedor</th>
+              <th>Total Bs</th>
+              <th>Total USD</th>
+              <th>Método</th>
+              <th>Estado</th>
+              <th style="text-align:right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sales.map(s => `
+              <tr>
+                <td style="font-family:var(--font-mono);font-weight:600;color:var(--primary)">${s.sale_number}</td>
+                <td style="color:var(--outline)">${Format.datetime(s.created_at)}</td>
+                <td>${s.user_name || '—'}</td>
+                <td style="font-family:var(--font-mono);font-weight:700">Bs. ${(s.total * rate).toFixed(2)}</td>
+                <td style="font-family:var(--font-mono);color:var(--outline)">$${s.total.toFixed(2)}</td>
+                <td><span class="badge badge-info">${s.payment_method}</span></td>
+                <td>
+                  ${s.status === 'completed' ? '<span class="badge badge-success">Completada</span>' : 
+                    s.status === 'credit' ? '<span class="badge badge-warning">Crédito</span>' : 
+                    '<span class="badge badge-error">Anulada</span>'}
+                </td>
+                <td style="text-align:right">
+                  <button class="btn btn-sm btn-ghost" title="Ver Ticket" onclick="window.location.hash='#/pos?receipt=${s.id}'">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                  </button>
+                  <button class="btn btn-sm btn-ghost" style="color:var(--error)" title="Eliminar Venta" onclick="ReportsPage.deleteSale(${s.id}, '${s.sale_number}')">
+                    <span class="material-symbols-outlined">delete_forever</span>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch (e) {
+      container.innerHTML = `<div class="empty-state"><span class="material-symbols-outlined">error</span><p>${e.message}</p></div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  },
+
+  async deleteSale(id, saleNumber) {
+    // Doble confirmación por seguridad
+    if (!confirm(`⚠️ ATENCIÓN ⚠️\n\n¿Estás seguro de que quieres ELIMINAR COMPLETAMENTE la venta ${saleNumber}?\n\n- Se restaurará el stock de los productos.\n- Se eliminará de la caja registradora.\n- Esta acción NO se puede deshacer.`)) return;
+    
+    const input = prompt(`¿Estás TOTALMENTE SEGURO?\nEscribe 'si' para confirmar la eliminación de la venta ${saleNumber}:`);
+    if (input !== 'si' && input !== 'SI' && input !== 'sí' && input !== 'SÍ') {
+        Toast.info('Eliminación cancelada');
+        return;
+    }
+
+    try {
+      await API.delete(`/api/sales/${id}`);
+      Toast.success(`Venta ${saleNumber} eliminada y stock restaurado`);
+      Sounds.play('success');
+      this.loadMovements(); // Recargar la tabla
+    } catch (e) {
+      Toast.error(`Error al eliminar: ${e.message}`);
     }
   }
 };

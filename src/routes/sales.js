@@ -104,4 +104,56 @@ router.post('/:id/void', authenticateToken, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// DELETE /api/sales/:id - Eliminar una venta completamente (restaura stock)
+router.delete('/:id', authenticateToken, (req, res) => {
+  try {
+    const db = getDb();
+    const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+    if (!sale) return res.status(404).json({ error: 'Venta no encontrada' });
+
+    db.transaction(() => {
+      // 1. Restaurar stock de productos
+      const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
+      for (const item of items) {
+        const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
+        if (product) {
+          const newStock = (product.stock || 0) + item.quantity;
+          db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?").run(newStock, item.product_id);
+          // Registrar movimiento de stock de restauración
+          db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'in', ?, ?, ?, ?, ?)").run(
+            item.product_id, item.quantity, product.stock, newStock, `Eliminación ${sale.sale_number}`, req.user.id
+          );
+        }
+      }
+
+      // 2. Eliminar items de la venta
+      db.prepare('DELETE FROM sale_items WHERE sale_id = ?').run(sale.id);
+
+      // 3. Eliminar movimientos de stock de la venta original
+      db.prepare('DELETE FROM stock_movements WHERE reference = ?').run(`Venta ${sale.sale_number}`);
+
+      // 4. Eliminar transacción de caja asociada
+      db.prepare('DELETE FROM cash_transactions WHERE reference = ?').run(sale.sale_number);
+
+      // 5. Eliminar crédito asociado si existe
+      db.prepare('DELETE FROM credit_payments WHERE credit_id IN (SELECT id FROM credits WHERE sale_id = ?)').run(sale.id);
+      db.prepare('DELETE FROM credits WHERE sale_id = ?').run(sale.id);
+
+      // 6. Eliminar la venta
+      db.prepare('DELETE FROM sales WHERE id = ?').run(sale.id);
+
+      // 7. Registrar en log
+      db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
+        req.user.id, 'delete_sale', 'sale', sale.id, `Venta ${sale.sale_number} eliminada: $${sale.total.toFixed(2)}`
+      );
+    })();
+
+    const io = req.app.get('io');
+    if (io) io.emit('sale:deleted', { id: sale.id, sale_number: sale.sale_number });
+    res.json({ message: `Venta ${sale.sale_number} eliminada`, sale_number: sale.sale_number });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

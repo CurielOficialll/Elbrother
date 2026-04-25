@@ -1,11 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('velopack', {
+contextBridge.exposeInMainWorld('elbrother', {
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
-  downloadUpdate: (updateInfo) => ipcRenderer.invoke('download-update', updateInfo),
-  applyUpdate: (updateInfo) => ipcRenderer.invoke('apply-update', updateInfo),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
   getDbPath: () => ipcRenderer.invoke('get-db-path'),
   selectDbPath: () => ipcRenderer.invoke('select-db-path'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getRemoteConfig: () => ipcRenderer.invoke('get-remote-config'),
   isElectron: true
 });

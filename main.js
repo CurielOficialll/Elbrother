@@ -1,13 +1,10 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { VelopackApp, UpdateManager } = require('velopack');
 const { start } = require('./server');
 
-// Velopack initialization must be the first thing to run
-VelopackApp.build().run();
-
 let mainWindow;
+let torreAgent = null;
 
 // --- Configuración de Base de Datos ---
 const configPath = path.join(app.getPath('userData'), 'config.json');
@@ -77,7 +74,9 @@ function createWindow() {
   });
 }
 
-// IPC Handlers for DB Management
+// ═══════════════════════════════════════════
+//  IPC HANDLERS — Base de Datos
+// ═══════════════════════════════════════════
 ipcMain.handle('get-db-path', () => getSavedDbPath());
 ipcMain.handle('get-app-version', () => app.getVersion());
 
@@ -97,33 +96,18 @@ ipcMain.handle('select-db-path', async () => {
   return null;
 });
 
-// IPC Handlers for Velopack Updates
-const updateUrl = "https://github.com/CurielOficialll/Elbrother";
-let um = null;
-
-if (app.isPackaged) {
-  try {
-    um = new UpdateManager(updateUrl);
-  } catch (e) {
-    console.error("Velopack could not be initialized:", e);
-  }
-}
-
+// ═══════════════════════════════════════════
+//  IPC HANDLERS — Actualizaciones (via Torre Central)
+// ═══════════════════════════════════════════
 ipcMain.handle('check-for-updates', async () => {
-  if (!um) return null;
-  try {
-    const updateInfo = await um.checkForUpdatesAsync();
-    return updateInfo;
-  } catch (err) {
-    console.error('Error checking for updates:', err);
-    throw err;
-  }
+  if (!torreAgent) return null;
+  return torreAgent.getUpdateInfo();
 });
 
-ipcMain.handle('download-update', async (event, updateInfo) => {
-  if (!um) return false;
+ipcMain.handle('download-update', async () => {
+  if (!torreAgent) return false;
   try {
-    await um.downloadUpdatesAsync(updateInfo);
+    await torreAgent.downloadAndApplyUpdate();
     return true;
   } catch (err) {
     console.error('Error downloading update:', err);
@@ -131,16 +115,14 @@ ipcMain.handle('download-update', async (event, updateInfo) => {
   }
 });
 
-ipcMain.handle('apply-update', async (event, updateInfo) => {
-  if (!um) return;
-  try {
-    await um.applyUpdatesAndRestart(updateInfo);
-  } catch (err) {
-    console.error('Error applying update:', err);
-    throw err;
-  }
+ipcMain.handle('get-remote-config', () => {
+  if (!torreAgent) return {};
+  return torreAgent.getRemoteConfig();
 });
 
+// ═══════════════════════════════════════════
+//  ARRANQUE DE LA APP
+// ═══════════════════════════════════════════
 app.whenReady().then(async () => {
   const dbPath = getSavedDbPath();
   
@@ -153,12 +135,26 @@ app.whenReady().then(async () => {
     createWindow();
   } catch (err) {
     console.error('Failed to start server:', err);
+    dialog.showErrorBox(
+      'Error de Inicio',
+      `No se pudo iniciar el servidor interno:\n\n${err.message}\n\nEl programa se cerrará.`
+    );
     app.quit();
   }
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
+  // Iniciar Torre Central con retraso de seguridad (10 segundos)
+  setTimeout(() => {
+    try {
+      torreAgent = require('./src/services/torreAgent');
+      torreAgent.init();
+    } catch (e) {
+      console.error('[Torre Central] Error al cargar agente:', e);
+    }
+  }, 10000);
 });
 
 app.on('window-all-closed', function () {

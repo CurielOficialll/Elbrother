@@ -23,7 +23,7 @@ window.SettingsPage = {
         <div class="card" style="margin-bottom:16px">
           <div class="card-header"><span class="card-title">Ubicación de Base de Datos</span></div>
           <div style="margin-bottom:12px">
-            <div id="db-path-display" style="font-family:monospace;font-size:12px;color:var(--on-surface-variant);margin-bottom:8px;word-break:break-all">${window.velopack ? await window.velopack.getDbPath() : 'Modo desarrollo'}</div>
+            <div id="db-path-display" style="font-family:monospace;font-size:12px;color:var(--on-surface-variant);margin-bottom:8px;word-break:break-all">${window.elbrother ? await window.elbrother.getDbPath() : 'Modo desarrollo'}</div>
             <button class="btn btn-outline btn-sm" onclick="SettingsPage.changeDbPath()">
               <span class="material-symbols-outlined">folder_open</span>Cambiar Ubicación
             </button>
@@ -32,7 +32,7 @@ window.SettingsPage = {
         <div class="card" style="margin-bottom:16px" id="update-card">
           <div class="card-header"><span class="card-title">Actualización de Software</span></div>
           <div style="margin-bottom:12px">
-            <div id="update-status" style="color:var(--on-surface-variant);margin-bottom:8px">Versión actual: v${window.velopack ? await window.velopack.getAppVersion() : '2.5.1 (dev)'}</div>
+            <div id="update-status" style="color:var(--on-surface-variant);margin-bottom:8px">Versión actual: v${window.elbrother ? await window.elbrother.getAppVersion() : '2.5.1 (dev)'}</div>
             <div id="update-progress-container" style="display:none;margin-bottom:8px">
               <div style="height:4px;background:var(--outline-variant);border-radius:2px;overflow:hidden">
                 <div id="update-progress-bar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s"></div>
@@ -94,16 +94,16 @@ window.SettingsPage = {
     } catch(e) { Toast.error(e.message); }
   },
   async checkUpdate() {
-    if (!window.velopack) return Toast.error('El sistema de actualizaciones solo está disponible en la versión instalada.');
+    if (!window.elbrother) return Toast.error('El sistema de actualizaciones solo está disponible en la versión instalada.');
     
     const btn = document.getElementById('btn-check-update');
     const status = document.getElementById('update-status');
     
     try {
       btn.disabled = true;
-      status.innerText = 'Buscando actualizaciones...';
+      status.innerText = 'Consultando Torre Central...';
       
-      const updateInfo = await window.velopack.checkForUpdates();
+      const updateInfo = await window.elbrother.checkForUpdates();
       
       if (!updateInfo) {
         status.innerText = 'Tienes la versión más reciente.';
@@ -111,10 +111,11 @@ window.SettingsPage = {
         return;
       }
       
-      status.innerHTML = `<span style="color:var(--primary);font-weight:600">Nueva versión disponible: ${updateInfo.TargetFullRelease.Version}</span>`;
-      btn.innerHTML = '<span class="material-symbols-outlined">download</span>Descargar ahora';
+      status.innerHTML = `<span style="color:var(--primary);font-weight:600">Nueva versión disponible: v${updateInfo.version}</span>
+        <br><span style="font-size:12px;color:var(--on-surface-variant)">${updateInfo.notes || ''}</span>`;
+      btn.innerHTML = '<span class="material-symbols-outlined">download</span>Descargar e Instalar';
       btn.disabled = false;
-      btn.onclick = () => SettingsPage.downloadUpdate(updateInfo);
+      btn.onclick = () => SettingsPage.downloadUpdate();
       
     } catch(e) {
       status.innerText = 'Error al buscar actualizaciones.';
@@ -122,25 +123,17 @@ window.SettingsPage = {
       Toast.error(e.message);
     }
   },
-  async downloadUpdate(updateInfo) {
+  async downloadUpdate() {
     const btn = document.getElementById('btn-check-update');
     const status = document.getElementById('update-status');
-    const progressContainer = document.getElementById('update-progress-container');
-    const progressBar = document.getElementById('update-progress-bar');
     
     try {
       btn.disabled = true;
-      status.innerText = 'Descargando actualización...';
-      progressContainer.style.display = 'block';
-      progressBar.style.width = '50%'; // Velopack Node SDK doesn't always give progress easily in one call
+      status.innerText = 'Descargando actualización desde Torre Central...';
       
-      await window.velopack.downloadUpdate(updateInfo);
+      await window.elbrother.downloadUpdate();
       
-      progressBar.style.width = '100%';
-      status.innerText = 'Descarga completada. Listo para instalar.';
-      btn.innerHTML = '<span class="material-symbols-outlined">restart_alt</span>Reiniciar y Actualizar';
-      btn.disabled = false;
-      btn.onclick = () => window.velopack.applyUpdate(updateInfo);
+      status.innerText = 'Instalando... La aplicación se reiniciará automáticamente.';
       
     } catch(e) {
       status.innerText = 'Error al descargar la actualización.';
@@ -149,12 +142,12 @@ window.SettingsPage = {
     }
   },
   async changeDbPath() {
-    if (!window.velopack) return Toast.error('Esta función solo está disponible en la versión instalada.');
+    if (!window.elbrother) return Toast.error('Esta función solo está disponible en la versión instalada.');
     
     if (!confirm('¿Estás seguro de cambiar la ubicación de la base de datos? El programa se reiniciará para aplicar los cambios.')) return;
     
     try {
-      const newPath = await window.velopack.selectDbPath();
+      const newPath = await window.elbrother.selectDbPath();
       if (newPath) {
         Toast.success('Ubicación guardada. Reiniciando...');
         setTimeout(() => location.reload(), 1500);
