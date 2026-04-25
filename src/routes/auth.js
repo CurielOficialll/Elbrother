@@ -6,7 +6,7 @@ const { getDb } = require('../database/connection');
 const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
 // POST /api/auth/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -20,7 +20,7 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const valid = bcrypt.compareSync(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }

@@ -40,7 +40,7 @@ window.DashboardPage = {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="section-gap">
         <div class="card">
-          <div class="card-header"><span class="card-title">Últimas Ventas</span><a href="#/pos" class="btn btn-sm btn-ghost">Ver todas</a></div>
+          <div class="card-header"><span class="card-title">Últimas Ventas</span><a href="#/reports" class="btn btn-sm btn-ghost">Ver todas</a></div>
           <div class="table-container">
             <table>
               <thead><tr><th>#</th><th>Total Bs</th><th>USD</th><th>Método</th><th>Hora</th></tr></thead>

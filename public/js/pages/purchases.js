@@ -61,9 +61,9 @@ window.PurchasesPage = {
           <tbody>
             ${purchases.map(p => `
               <tr>
-                <td style="font-family:var(--font-mono);font-weight:600">${p.purchase_number}</td>
+                <td style="font-family:var(--font-mono);font-weight:600">${escapeHTML(p.purchase_number)}</td>
                 <td>${Format.datetime(p.created_at)}</td>
-                <td>${p.supplier_name || '—'}</td>
+                <td>${escapeHTML(p.supplier_name) || '—'}</td>
                 <td style="text-transform:uppercase;font-size:12px">${p.payment_method}</td>
                 <td style="font-family:var(--font-mono);font-weight:700">$${p.total.toFixed(2)}</td>
                 <td><span class="badge ${p.status === 'completed' ? 'badge-success' : 'badge-warning'}">${p.status}</span></td>
@@ -173,7 +173,7 @@ window.PurchasesPage = {
           <tbody>
             ${payables.map(p => `
               <tr>
-                <td style="font-weight:600">${p.supplier_name || '—'}</td>
+                <td style="font-weight:600">${escapeHTML(p.supplier_name) || '—'}</td>
                 <td style="font-family:var(--font-mono)">${p.purchase_number}</td>
                 <td>${Format.date(p.created_at)}</td>
                 <td style="font-family:var(--font-mono)">$${p.amount.toFixed(2)}</td>
@@ -280,15 +280,15 @@ window.PurchasesPage = {
           <tbody>
             ${suppliers.map(s => `
               <tr>
-                <td style="font-weight:600">${s.name}</td>
-                <td>${s.phone || '—'}</td>
-                <td>${s.email || '—'}</td>
-                <td>${s.notes || '—'}</td>
+                <td style="font-weight:600">${escapeHTML(s.name)}</td>
+                <td>${escapeHTML(s.phone) || '—'}</td>
+                <td>${escapeHTML(s.email) || '—'}</td>
+                <td>${escapeHTML(s.notes) || '—'}</td>
                 <td>
                   <button class="btn btn-sm btn-ghost" onclick="PurchasesPage.viewSupplier(${s.id})" title="Ver">
                     <span class="material-symbols-outlined" style="font-size:18px">visibility</span>
                   </button>
-                  <button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="PurchasesPage.deleteSupplier(${s.id}, '${s.name.replace(/'/g, "\\'")}')" title="Eliminar Proveedor">
+                  <button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="PurchasesPage.deleteSupplier(${s.id}, '${escapeHTML(s.name).replace(/'/g, "\\'")}')" title="Eliminar Proveedor">
                     <span class="material-symbols-outlined" style="font-size:18px">delete</span>
                   </button>
                 </td>
@@ -449,7 +449,7 @@ window.PurchasesPage = {
     return `
       <div style="padding:8px;border:1px solid var(--outline-variant);border-radius:6px;display:flex;justify-content:space-between;align-items:center;background:var(--surface)">
         <div>
-          <div style="font-weight:600;font-size:13px">${p.name}</div>
+          <div style="font-weight:600;font-size:13px">${escapeHTML(p.name)}</div>
           <div style="font-size:11px;color:var(--outline)">Stock act: ${p.stock} | Costo act: $${(p.cost_price||0).toFixed(2)}</div>
         </div>
         <button class="btn btn-sm btn-ghost" onclick='PurchasesPage.addToPurchaseCart(${JSON.stringify(p).replace(/'/g, "&#39;")})'><span class="material-symbols-outlined">add</span></button>
@@ -507,7 +507,7 @@ window.PurchasesPage = {
       return `
         <div style="background:var(--surface);border-radius:6px;padding:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-weight:600;font-size:13px">${item.name}</span>
+            <span style="font-weight:600;font-size:13px">${escapeHTML(item.name)}</span>
             <button class="btn btn-sm btn-ghost" style="color:var(--error);padding:0" onclick="PurchasesPage.removeFromPurchaseCart(${idx})"><span class="material-symbols-outlined" style="font-size:16px">close</span></button>
           </div>
           <div style="display:flex;gap:8px;align-items:center">

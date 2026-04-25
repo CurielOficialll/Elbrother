@@ -225,7 +225,7 @@ window.ReportsPage = {
               <tbody>
                 ${topProducts.map(p => `
                   <tr>
-                    <td style="font-weight:600">${p.name}</td>
+                    <td style="font-weight:600">${escapeHTML(p.name)}</td>
                     <td style="font-family:var(--font-mono)">${p.total_qty}</td>
                     <td style="font-family:var(--font-mono);color:var(--primary);font-weight:700">Bs. ${(p.total_amount*rate).toFixed(2)}</td>
                     <td style="font-family:var(--font-mono);color:var(--outline)">$${p.total_amount.toFixed(2)}</td>
@@ -256,9 +256,9 @@ window.ReportsPage = {
     container.innerHTML = `<div style="text-align:center;padding:24px"><span class="material-symbols-outlined" style="animation:spin 1s linear infinite">sync</span><p style="color:var(--outline);margin-top:8px">Cargando movimientos...</p></div>`;
 
     try {
-      // API expects endDate to be inclusive, so we append T23:59:59 to 'to' date
-      const toInclusive = `${to}T23:59:59.999Z`;
-      const fromStart = `${from}T00:00:00.000Z`;
+      // SQLite stores dates as 'YYYY-MM-DD HH:MM:SS' so we use the same format
+      const toInclusive = `${to} 23:59:59`;
+      const fromStart = `${from} 00:00:00`;
       
       const sales = await API.get(`/api/sales?from=${fromStart}&to=${toInclusive}&limit=500`);
       const rate = Store.get('bcvRate') || 483.87;
@@ -287,7 +287,7 @@ window.ReportsPage = {
               <tr>
                 <td style="font-family:var(--font-mono);font-weight:600;color:var(--primary)">${s.sale_number}</td>
                 <td style="color:var(--outline)">${Format.datetime(s.created_at)}</td>
-                <td>${s.user_name || '—'}</td>
+                <td>${escapeHTML(s.user_name) || '—'}</td>
                 <td style="font-family:var(--font-mono);font-weight:700">Bs. ${(s.total * rate).toFixed(2)}</td>
                 <td style="font-family:var(--font-mono);color:var(--outline)">$${s.total.toFixed(2)}</td>
                 <td><span class="badge badge-info">${s.payment_method}</span></td>
@@ -300,7 +300,7 @@ window.ReportsPage = {
                   <button class="btn btn-sm btn-ghost" title="Ver Ticket" onclick="window.location.hash='#/pos?receipt=${s.id}'">
                     <span class="material-symbols-outlined">receipt_long</span>
                   </button>
-                  <button class="btn btn-sm btn-ghost" style="color:var(--error)" title="Eliminar Venta" onclick="ReportsPage.deleteSale(${s.id}, '${s.sale_number}')">
+                  <button class="btn btn-sm btn-ghost" style="color:var(--error)" title="Eliminar Venta" onclick="ReportsPage.deleteSale(${s.id}, '${escapeHTML(s.sale_number)}')">
                     <span class="material-symbols-outlined">delete_forever</span>
                   </button>
                 </td>
@@ -317,17 +317,10 @@ window.ReportsPage = {
   },
 
   async deleteSale(id, saleNumber) {
-    // Doble confirmación por seguridad
-    if (!confirm(`⚠️ ATENCIÓN ⚠️\n\n¿Estás seguro de que quieres ELIMINAR COMPLETAMENTE la venta ${saleNumber}?\n\n- Se restaurará el stock de los productos.\n- Se eliminará de la caja registradora.\n- Esta acción NO se puede deshacer.`)) return;
-    
-    const input = prompt(`¿Estás TOTALMENTE SEGURO?\nEscribe 'si' para confirmar la eliminación de la venta ${saleNumber}:`);
-    if (input !== 'si' && input !== 'SI' && input !== 'sí' && input !== 'SÍ') {
-        Toast.info('Eliminación cancelada');
-        return;
-    }
+    if (!confirm(`¿Eliminar la venta ${saleNumber}?\n\nSe restaurará el stock y se eliminará de la caja.`)) return;
 
     try {
-      await API.delete(`/api/sales/${id}`);
+      await API.del(`/api/sales/${id}`);
       Toast.success(`Venta ${saleNumber} eliminada y stock restaurado`);
       Sounds.play('success');
       this.loadMovements(); // Recargar la tabla

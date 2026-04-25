@@ -7,13 +7,13 @@ window.ClientsPage = {
       <div class="pos-search" style="margin-bottom:16px"><span class="material-symbols-outlined">search</span><input type="text" placeholder="Buscar por nombre o cédula..." oninput="ClientsPage.search(this.value)"></div>
       <div class="table-container"><table><thead><tr><th>Nombre</th><th>Cédula</th><th>Teléfono</th><th>Deuda Bs</th><th>Deuda USD</th><th>Límite</th><th>Acciones</th></tr></thead>
       <tbody id="clients-tbody">${clients.map(c=>`<tr>
-        <td style="font-weight:600">${c.name}</td>
-        <td style="font-family:var(--font-mono)">${c.cedula||'—'}</td>
-        <td>${c.phone||'—'}</td>
+        <td style="font-weight:600">${escapeHTML(c.name)}</td>
+        <td style="font-family:var(--font-mono)">${escapeHTML(c.cedula)||'—'}</td>
+        <td>${escapeHTML(c.phone)||'—'}</td>
         <td style="font-family:var(--font-mono);color:${c.total_debt>0?'var(--error)':'var(--success)'};font-weight:700">Bs. ${((c.total_debt||0)*rate).toFixed(2)}</td>
         <td style="font-family:var(--font-mono);color:var(--outline)">$${(c.total_debt||0).toFixed(2)}</td>
         <td style="font-family:var(--font-mono)">$${(c.credit_limit||0).toFixed(2)}</td>
-        <td style="display:flex;gap:4px"><button class="btn btn-sm btn-ghost" onclick="ClientsPage.viewDetail(${c.id})" title="Ver"><span class="material-symbols-outlined" style="font-size:18px">visibility</span></button><button class="btn btn-sm btn-ghost" onclick="ClientsPage.openEdit(${c.id})" title="Editar"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button><button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="ClientsPage.deleteClient(${c.id},'${c.name.replace(/'/g,"\\&#39;")}')" title="Eliminar"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td>
+        <td style="display:flex;gap:4px"><button class="btn btn-sm btn-ghost" onclick="ClientsPage.viewDetail(${c.id})" title="Ver"><span class="material-symbols-outlined" style="font-size:18px">visibility</span></button><button class="btn btn-sm btn-ghost" onclick="ClientsPage.openEdit(${c.id})" title="Editar"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button><button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="ClientsPage.deleteClient(${c.id},'${escapeHTML(c.name).replace(/'/g,"\\&#39;")}')" title="Eliminar"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td>
       </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--outline)">No hay clientes registrados</td></tr>'}</tbody></table></div>`;
     } catch(e) { return `<div class="empty-state"><span class="material-symbols-outlined">error</span><p>${e.message}</p></div>`; }
   },
@@ -23,13 +23,13 @@ window.ClientsPage = {
     const tbody = document.getElementById('clients-tbody');
     if(!tbody) return;
     tbody.innerHTML = clients.map(c=>`<tr>
-      <td style="font-weight:600">${c.name}</td>
-      <td style="font-family:var(--font-mono)">${c.cedula||'—'}</td>
-      <td>${c.phone||'—'}</td>
+      <td style="font-weight:600">${escapeHTML(c.name)}</td>
+      <td style="font-family:var(--font-mono)">${escapeHTML(c.cedula)||'—'}</td>
+      <td>${escapeHTML(c.phone)||'—'}</td>
       <td style="font-family:var(--font-mono);color:${c.total_debt>0?'var(--error)':'var(--success)'};font-weight:700">Bs. ${((c.total_debt||0)*rate).toFixed(2)}</td>
       <td style="font-family:var(--font-mono);color:var(--outline)">$${(c.total_debt||0).toFixed(2)}</td>
       <td style="font-family:var(--font-mono)">$${(c.credit_limit||0).toFixed(2)}</td>
-      <td style="display:flex;gap:4px"><button class="btn btn-sm btn-ghost" onclick="ClientsPage.viewDetail(${c.id})"><span class="material-symbols-outlined" style="font-size:18px">visibility</span></button><button class="btn btn-sm btn-ghost" onclick="ClientsPage.openEdit(${c.id})"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button><button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="ClientsPage.deleteClient(${c.id},'${c.name.replace(/'/g,"\\&#39;")}')"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td>
+      <td style="display:flex;gap:4px"><button class="btn btn-sm btn-ghost" onclick="ClientsPage.viewDetail(${c.id})"><span class="material-symbols-outlined" style="font-size:18px">visibility</span></button><button class="btn btn-sm btn-ghost" onclick="ClientsPage.openEdit(${c.id})"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button><button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="ClientsPage.deleteClient(${c.id},'${escapeHTML(c.name).replace(/'/g,"\\&#39;")}')"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td>
     </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--outline)">Sin resultados</td></tr>';
   },
   openAdd() {
