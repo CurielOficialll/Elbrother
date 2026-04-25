@@ -4,7 +4,6 @@ const fs = require('fs');
 const { start } = require('./server');
 
 let mainWindow;
-let torreAgent = null;
 
 // --- Configuración de Base de Datos ---
 const configPath = path.join(app.getPath('userData'), 'config.json');
@@ -96,29 +95,7 @@ ipcMain.handle('select-db-path', async () => {
   return null;
 });
 
-// ═══════════════════════════════════════════
-//  IPC HANDLERS — Actualizaciones (via Torre Central)
-// ═══════════════════════════════════════════
-ipcMain.handle('check-for-updates', async () => {
-  if (!torreAgent) return null;
-  return torreAgent.getUpdateInfo();
-});
 
-ipcMain.handle('download-update', async () => {
-  if (!torreAgent) return false;
-  try {
-    await torreAgent.downloadAndApplyUpdate();
-    return true;
-  } catch (err) {
-    console.error('Error downloading update:', err);
-    throw err;
-  }
-});
-
-ipcMain.handle('get-remote-config', () => {
-  if (!torreAgent) return {};
-  return torreAgent.getRemoteConfig();
-});
 
 // ═══════════════════════════════════════════
 //  ARRANQUE DE LA APP
@@ -146,15 +123,6 @@ app.whenReady().then(async () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 
-  // Iniciar Torre Central con retraso de seguridad (10 segundos)
-  setTimeout(() => {
-    try {
-      torreAgent = require('./src/services/torreAgent');
-      torreAgent.init();
-    } catch (e) {
-      console.error('[Torre Central] Error al cargar agente:', e);
-    }
-  }, 10000);
 });
 
 app.on('window-all-closed', function () {

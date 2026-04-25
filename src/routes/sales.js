@@ -99,6 +99,14 @@ router.post('/:id/void', authenticateToken, (req, res) => {
         db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'in', ?, ?, ?, ?, ?)").run(item.product_id, item.quantity, p?.stock || 0, ns, `Anulación ${sale.sale_number}`, req.user.id);
       }
       db.prepare("UPDATE sales SET status = 'voided' WHERE id = ?").run(sale.id);
+      
+      // Contrarrestar la transacción de caja original para que no descuadre
+      const session = db.prepare("SELECT id FROM cash_sessions WHERE user_id = ? AND status = 'open' LIMIT 1").get(req.user.id);
+      if (session) {
+        db.prepare('INSERT INTO cash_transactions (session_id, type, amount, payment_method, reference) VALUES (?, ?, ?, ?, ?)').run(
+          session.id, 'refund', -sale.total, sale.payment_method, `Anulación Venta ${sale.sale_number}`
+        );
+      }
     })();
     res.json({ message: 'Venta anulada' });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -112,17 +120,19 @@ router.delete('/:id', authenticateToken, (req, res) => {
     if (!sale) return res.status(404).json({ error: 'Venta no encontrada' });
 
     db.transaction(() => {
-      // 1. Restaurar stock de productos
-      const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
-      for (const item of items) {
-        const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
-        if (product) {
-          const newStock = (product.stock || 0) + item.quantity;
-          db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?").run(newStock, item.product_id);
-          // Registrar movimiento de stock de restauración
-          db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'in', ?, ?, ?, ?, ?)").run(
-            item.product_id, item.quantity, product.stock, newStock, `Eliminación ${sale.sale_number}`, req.user.id
-          );
+      // 1. Restaurar stock de productos (Solo si no estaba ya anulada)
+      if (sale.status === 'completed' || sale.status === 'credit') {
+        const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
+        for (const item of items) {
+          const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
+          if (product) {
+            const newStock = (product.stock || 0) + item.quantity;
+            db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?").run(newStock, item.product_id);
+            // Registrar movimiento de stock de restauración
+            db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'in', ?, ?, ?, ?, ?)").run(
+              item.product_id, item.quantity, product.stock, newStock, `Eliminación ${sale.sale_number}`, req.user.id
+            );
+          }
         }
       }
 

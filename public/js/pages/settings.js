@@ -29,20 +29,7 @@ window.SettingsPage = {
             </button>
           </div>
         </div>
-        <div class="card" style="margin-bottom:16px" id="update-card">
-          <div class="card-header"><span class="card-title">Actualización de Software</span></div>
-          <div style="margin-bottom:12px">
-            <div id="update-status" style="color:var(--on-surface-variant);margin-bottom:8px">Versión actual: v${window.elbrother ? await window.elbrother.getAppVersion() : '2.5.1 (dev)'}</div>
-            <div id="update-progress-container" style="display:none;margin-bottom:8px">
-              <div style="height:4px;background:var(--outline-variant);border-radius:2px;overflow:hidden">
-                <div id="update-progress-bar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s"></div>
-              </div>
-            </div>
-            <button class="btn btn-outline btn-sm" id="btn-check-update" onclick="SettingsPage.checkUpdate()">
-              <span class="material-symbols-outlined">update</span>Buscar Actualización
-            </button>
-          </div>
-        </div>
+
         <div class="card" style="margin-bottom:16px; border: 1px solid var(--error-container)">
           <div class="card-header"><span class="card-title" style="color:var(--error)">Mantenimiento Crítico</span></div>
           <div style="margin-bottom:12px">
@@ -93,54 +80,7 @@ window.SettingsPage = {
       App.navigate('settings');
     } catch(e) { Toast.error(e.message); }
   },
-  async checkUpdate() {
-    if (!window.elbrother) return Toast.error('El sistema de actualizaciones solo está disponible en la versión instalada.');
-    
-    const btn = document.getElementById('btn-check-update');
-    const status = document.getElementById('update-status');
-    
-    try {
-      btn.disabled = true;
-      status.innerText = 'Consultando Torre Central...';
-      
-      const updateInfo = await window.elbrother.checkForUpdates();
-      
-      if (!updateInfo) {
-        status.innerText = 'Tienes la versión más reciente.';
-        btn.disabled = false;
-        return;
-      }
-      
-      status.innerHTML = `<span style="color:var(--primary);font-weight:600">Nueva versión disponible: v${updateInfo.version}</span>
-        <br><span style="font-size:12px;color:var(--on-surface-variant)">${updateInfo.notes || ''}</span>`;
-      btn.innerHTML = '<span class="material-symbols-outlined">download</span>Descargar e Instalar';
-      btn.disabled = false;
-      btn.onclick = () => SettingsPage.downloadUpdate();
-      
-    } catch(e) {
-      status.innerText = 'Error al buscar actualizaciones.';
-      btn.disabled = false;
-      Toast.error(e.message);
-    }
-  },
-  async downloadUpdate() {
-    const btn = document.getElementById('btn-check-update');
-    const status = document.getElementById('update-status');
-    
-    try {
-      btn.disabled = true;
-      status.innerText = 'Descargando actualización desde Torre Central...';
-      
-      await window.elbrother.downloadUpdate();
-      
-      status.innerText = 'Instalando... La aplicación se reiniciará automáticamente.';
-      
-    } catch(e) {
-      status.innerText = 'Error al descargar la actualización.';
-      btn.disabled = false;
-      Toast.error(e.message);
-    }
-  },
+
   async changeDbPath() {
     if (!window.elbrother) return Toast.error('Esta función solo está disponible en la versión instalada.');
     
