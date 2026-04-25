@@ -156,13 +156,14 @@ class TorreAgent {
   // ═══════════════════════════════════════════
 
   listenForCommands() {
+    const { onChildAdded } = require('firebase/database');
     const commandsRef = ref(this.db, `commands/${this.machineId}`);
-    onValue(commandsRef, (snapshot) => {
-      const commands = snapshot.val();
-      if (commands) {
-        Object.entries(commands).forEach(([id, cmd]) => {
-            this.executeCommand(cmd, id);
-        });
+    
+    // onChildAdded solo se dispara para comandos nuevos, evitando procesar varias veces si la conexión parpadea o hay varios en cola
+    onChildAdded(commandsRef, (snapshot) => {
+      const cmd = snapshot.val();
+      if (cmd) {
+        this.executeCommand(cmd, snapshot.key);
       }
     });
   }
