@@ -15,9 +15,17 @@ window.SettingsPage = {
         </div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-header"><span class="card-title">Tasa BCV</span></div>
-          <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
-            <div class="kpi-value" style="font-size:28px">${config.bcv_rate||'36.50'} Bs/$</div>
-            <button class="btn btn-outline btn-sm" onclick="SettingsPage.refreshBCV()"><span class="material-symbols-outlined">refresh</span>Actualizar</button>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <input type="number" step="0.0001" id="cfg-bcv" class="form-input" style="font-size:24px; width: 150px; font-weight: bold; color: var(--primary);" value="${config.bcv_rate||'36.50'}">
+            <span style="font-size:24px; font-weight:bold; color: var(--primary);">Bs/$</span>
+          </div>
+          <div style="display:flex; gap: 8px;">
+            <button class="btn btn-outline btn-sm" onclick="SettingsPage.refreshBCV()" title="Actualizar desde el Banco Central">
+              <span class="material-symbols-outlined">refresh</span>Actualizar Auto
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="SettingsPage.saveManualBCV()" title="Guardar valor ingresado manualmente">
+              <span class="material-symbols-outlined">save</span>Guardar Manual
+            </button>
           </div>
         </div>
         <div class="card" style="margin-bottom:16px">
@@ -77,6 +85,22 @@ window.SettingsPage = {
       const result = await API.post('/api/system/bcv/refresh');
       Toast.success(`Tasa actualizada: ${result.rate} Bs/$`);
       Store.set('bcvRate', result.rate);
+      App.navigate('settings');
+    } catch(e) { Toast.error(e.message); }
+  },
+  async saveManualBCV() {
+    try {
+      const bcvInput = document.getElementById('cfg-bcv').value;
+      const bcvRateNum = parseFloat(bcvInput);
+      if (!bcvRateNum || bcvRateNum <= 0) throw new Error('Tasa inválida');
+      
+      const result = await API.post('/api/system/bcv/manual', { rate: bcvRateNum });
+      Toast.success(`Tasa manual guardada: ${result.rate} Bs/$`);
+      Store.set('bcvRate', result.rate);
+      
+      const headerBcv = document.getElementById('bcv-rate-value');
+      if (headerBcv) headerBcv.textContent = Number(result.rate).toFixed(2);
+      
       App.navigate('settings');
     } catch(e) { Toast.error(e.message); }
   },

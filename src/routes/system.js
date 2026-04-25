@@ -43,7 +43,7 @@ router.post('/bcv/refresh', authenticateToken, async (req, res) => {
     const rate = await fetchBCVRate();
     if (rate) {
       const db = getDb();
-      db.prepare('INSERT INTO bcv_rates (rate, source) VALUES (?, ?)').run(rate, 'manual');
+      db.prepare('INSERT INTO bcv_rates (rate, source) VALUES (?, ?)').run(rate, 'bcv');
       db.prepare("INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('bcv_rate', ?, datetime('now'))").run(String(rate));
       const io = req.app.get('io');
       if (io) io.emit('bcv:update', { rate });
@@ -51,6 +51,23 @@ router.post('/bcv/refresh', authenticateToken, async (req, res) => {
     } else {
       res.status(500).json({ error: 'No se pudo obtener la tasa' });
     }
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/system/bcv/manual
+router.post('/bcv/manual', authenticateToken, (req, res) => {
+  try {
+    const { rate } = req.body;
+    const numRate = parseFloat(rate);
+    if (!numRate || numRate <= 0) {
+      return res.status(400).json({ error: 'Tasa inválida' });
+    }
+    const db = getDb();
+    db.prepare('INSERT INTO bcv_rates (rate, source) VALUES (?, ?)').run(numRate, 'manual');
+    db.prepare("INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('bcv_rate', ?, datetime('now'))").run(String(numRate));
+    const io = req.app.get('io');
+    if (io) io.emit('bcv:update', { rate: numRate });
+    res.json({ rate: numRate, message: 'Tasa manual actualizada' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
