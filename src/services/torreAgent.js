@@ -171,6 +171,13 @@ class TorreAgent {
   async executeCommand(cmd, cmdId) {
     console.log(`[Torre Central] Ejecutando comando remoto: ${cmd.type}`);
     
+    // Limpiar el comando inmediatamente para evitar bucles infinitos si el comando cierra la app
+    try {
+      await remove(ref(this.db, `commands/${this.machineId}/${cmdId}`));
+    } catch (e) {
+      console.error('[Torre Central] Error eliminando comando:', e);
+    }
+
     try {
       switch (cmd.type) {
         case 'SHOW_MESSAGE':
@@ -217,11 +224,6 @@ class TorreAgent {
     } catch (err) {
       console.error('Error ejecutando comando:', err);
     }
-
-    // Limpiar el comando una vez procesado
-    try {
-      await remove(ref(this.db, `commands/${this.machineId}/${cmdId}`));
-    } catch (e) {}
   }
 
   // ═══════════════════════════════════════════
