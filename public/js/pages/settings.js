@@ -53,7 +53,7 @@ window.SettingsPage = {
     try {
       const logs = await API.get('/api/system/activity-log');
       const el = document.getElementById('activity-log');
-      if(el) el.innerHTML = logs.slice(0,20).map(l=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--outline-variant)"><div><span style="font-weight:600">${l.user_name||'Sistema'}</span> <span style="color:var(--outline)">${l.action}</span> <span style="color:var(--on-surface-variant)">${l.details||''}</span></div><span style="color:var(--outline);font-size:12px">${Format.timeAgo(l.created_at)}</span></div>`).join('')||'<p style="color:var(--outline)">Sin actividad</p>';
+      if(el) el.innerHTML = logs.slice(0,5).map(l=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--outline-variant)"><div><span style="font-weight:600">${l.user_name||'Sistema'}</span> <span style="color:var(--outline)">${l.action}</span> <span style="color:var(--on-surface-variant)">${l.details||''}</span></div><span style="color:var(--outline);font-size:12px">${Format.timeAgo(l.created_at)}</span></div>`).join('')||'<p style="color:var(--outline)">Sin actividad</p>';
     } catch(e) {}
   },
   async saveConfig() {

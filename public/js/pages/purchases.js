@@ -62,7 +62,7 @@ window.PurchasesPage = {
             ${purchases.map(p => `
               <tr>
                 <td style="font-family:var(--font-mono);font-weight:600">${p.purchase_number}</td>
-                <td>${Format.dateTime(p.created_at)}</td>
+                <td>${Format.datetime(p.created_at)}</td>
                 <td>${p.supplier_name || '—'}</td>
                 <td style="text-transform:uppercase;font-size:12px">${p.payment_method}</td>
                 <td style="font-family:var(--font-mono);font-weight:700">$${p.total.toFixed(2)}</td>
@@ -70,6 +70,9 @@ window.PurchasesPage = {
                 <td>
                   <button class="btn btn-sm btn-ghost" onclick="PurchasesPage.viewPurchase(${p.id})" title="Ver Detalles">
                     <span class="material-symbols-outlined" style="font-size:18px">visibility</span>
+                  </button>
+                  <button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="PurchasesPage.deletePurchase(${p.id}, '${p.purchase_number}')" title="Eliminar Compra">
+                    <span class="material-symbols-outlined" style="font-size:18px">delete</span>
                   </button>
                 </td>
               </tr>
@@ -95,7 +98,7 @@ window.PurchasesPage = {
           </div>
           <div>
             <div style="font-size:12px;color:var(--outline);text-transform:uppercase">Fecha</div>
-            <div>${Format.dateTime(p.created_at)}</div>
+            <div>${Format.datetime(p.created_at)}</div>
           </div>
           <div>
             <div style="font-size:12px;color:var(--outline);text-transform:uppercase">Método de Pago</div>
@@ -137,6 +140,17 @@ window.PurchasesPage = {
       `;
       document.getElementById('modal-overlay').classList.remove('hidden');
     } catch(e) { Toast.error(e.message); }
+  },
+
+  async deletePurchase(id, purchaseNumber) {
+    if (!confirm(`¿Está seguro de eliminar la compra ${purchaseNumber}?\nEsto restará los productos del inventario y eliminará las cuentas por pagar asociadas.`)) return;
+    try {
+      await API.del(`/api/purchases/${id}`);
+      Toast.success('Compra eliminada correctamente');
+      this.setTab('historial');
+    } catch(e) {
+      Toast.error(e.message);
+    }
   },
 
   // --- CUENTAS POR PAGAR ---
@@ -274,6 +288,9 @@ window.PurchasesPage = {
                   <button class="btn btn-sm btn-ghost" onclick="PurchasesPage.viewSupplier(${s.id})" title="Ver">
                     <span class="material-symbols-outlined" style="font-size:18px">visibility</span>
                   </button>
+                  <button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="PurchasesPage.deleteSupplier(${s.id}, '${s.name.replace(/'/g, "\\'")}')" title="Eliminar Proveedor">
+                    <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+                  </button>
                 </td>
               </tr>
             `).join('') || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--outline)">No hay proveedores registrados</td></tr>'}
@@ -341,6 +358,17 @@ window.PurchasesPage = {
       `;
       document.getElementById('modal-overlay').classList.remove('hidden');
     } catch(e) { Toast.error(e.message); }
+  },
+
+  async deleteSupplier(id, name) {
+    if (!confirm(`¿Está seguro de eliminar al proveedor "${name}"?`)) return;
+    try {
+      await API.del(`/api/suppliers/${id}`);
+      Toast.success('Proveedor eliminado correctamente');
+      this.setTab('suppliers');
+    } catch(e) {
+      Toast.error(e.message);
+    }
   },
 
   // --- REGISTRAR NUEVA COMPRA ---

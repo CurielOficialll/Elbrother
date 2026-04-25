@@ -29,10 +29,14 @@ window.LoginPage = {
           <p id="login-error" style="color:var(--error);font-size:13px;text-align:center;margin-top:16px;display:none"></p>
         </form>
         <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid var(--outline-variant)">
-          <p style="color:var(--outline);font-size:11px">Admin: admin@elbrother.com / admin123</p>
+          <p style="color:var(--outline);font-size:11px;cursor:pointer;transition:color 0.2s" onclick="window.LoginPage.fillCredentials()" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--outline)'" title="Clic para autocompletar">Admin: admin@elbrother.com / admin123</p>
         </div>
       </div>
     </div>`;
+  },
+  fillCredentials() {
+    document.getElementById('login-email').value = 'admin@elbrother.com';
+    document.getElementById('login-password').value = 'admin123';
   },
   async submit(e) {
     e.preventDefault();

@@ -18,7 +18,7 @@ window.CashPage = {
         </div>
         <div class="card section-gap"><div class="card-header"><span class="card-title">Movimientos</span></div>
           <div class="table-container"><table><thead><tr><th>Tipo</th><th>Monto Bs</th><th>USD</th><th>Método</th><th>Referencia</th><th>Hora</th></tr></thead>
-          <tbody>${(cash.transactions||[]).map(t=>`<tr><td><span class="badge ${t.type==='sale'?'badge-success':'badge-info'}">${t.type}</span></td><td style="font-family:var(--font-mono);font-weight:700">Bs. ${(t.amount*rate).toFixed(2)}</td><td style="font-family:var(--font-mono);color:var(--outline)">$${t.amount.toFixed(2)}</td><td>${t.payment_method||'—'}</td><td style="color:var(--outline)">${t.reference||'—'}</td><td style="color:var(--outline)">${Format.time(t.created_at)}</td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--outline)">Sin movimientos</td></tr>'}</tbody></table></div>
+          <tbody>${(cash.transactions||[]).map(t=>`<tr><td><span class="badge ${t.type==='sale'?'badge-success':'badge-info'}">${t.type}</span></td><td style="font-family:var(--font-mono);font-weight:700">Bs. ${(t.amount*rate).toFixed(2)}</td><td style="font-family:var(--font-mono);color:var(--outline)">$${t.amount.toFixed(2)}</td><td>${t.payment_method||'—'}</td><td style="color:var(--outline)">${t.reference||'—'}</td><td><span style="display:flex;align-items:center;gap:8px;color:var(--outline)">${Format.time(t.created_at)}<button class="btn btn-sm btn-ghost" style="color:var(--error);padding:0;min-height:unset;height:24px;width:24px" onclick="CashPage.deleteTransaction(${t.id}, '${t.type}', ${t.amount})" title="Eliminar"><span class="material-symbols-outlined" style="font-size:16px">delete</span></button></span></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--outline)">Sin movimientos</td></tr>'}</tbody></table></div>
         </div>
         <div class="section-gap" style="display:flex;gap:12px"><button class="btn btn-error btn-lg" onclick="CashPage.openCloseModal()"><span class="material-symbols-outlined">lock</span>Cerrar Caja</button></div>`;
       } else {
@@ -41,8 +41,8 @@ window.CashPage = {
       const rate = Store.get('bcvRate') || 483.87;
       if(!sessions.length) return '';
       return `<div class="card section-gap"><div class="card-header"><span class="card-title">Historial de Sesiones</span></div>
-      <div class="table-container"><table><thead><tr><th>Cajero</th><th>Apertura Bs</th><th>Cierre Bs</th><th>Diferencia</th><th>Fecha</th></tr></thead>
-      <tbody>${sessions.map(s=>`<tr><td>${s.user_name||'—'}</td><td style="font-family:var(--font-mono)">Bs. ${((s.opening_amount||0)*rate).toFixed(2)}</td><td style="font-family:var(--font-mono)">Bs. ${((s.closing_amount||0)*rate).toFixed(2)}</td><td style="font-family:var(--font-mono);color:${(s.difference||0)<0?'var(--error)':'var(--success)'}">Bs. ${((s.difference||0)*rate).toFixed(2)}</td><td style="color:var(--outline)">${Format.datetime(s.opened_at)}</td></tr>`).join('')}</tbody></table></div></div>`;
+      <div class="table-container"><table><thead><tr><th>Cajero</th><th>Apertura Bs</th><th>Cierre Bs</th><th>Diferencia</th><th>Fecha</th><th>Acciones</th></tr></thead>
+      <tbody>${sessions.map(s=>`<tr><td>${s.user_name||'—'}</td><td style="font-family:var(--font-mono)">Bs. ${((s.opening_amount||0)*rate).toFixed(2)}</td><td style="font-family:var(--font-mono)">Bs. ${((s.closing_amount||0)*rate).toFixed(2)}</td><td style="font-family:var(--font-mono);color:${(s.difference||0)<0?'var(--error)':'var(--success)'}">Bs. ${((s.difference||0)*rate).toFixed(2)}</td><td style="color:var(--outline)">${Format.datetime(s.opened_at)}</td><td><button class="btn btn-sm btn-ghost" style="color:var(--error);padding:0" onclick="CashPage.deleteSession(${s.id})" title="Eliminar"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td></tr>`).join('')}</tbody></table></div></div>`;
     } catch(e) { return ''; }
   },
   async openCash() {
@@ -76,6 +76,27 @@ window.CashPage = {
       const diffBs = (result.difference * rate).toFixed(2);
       Toast.success(`Caja cerrada. Diferencia: Bs. ${diffBs} ($${result.difference.toFixed(2)})`);
       Sounds.play('success'); App.navigate('cash');
+      Sounds.play('success'); App.navigate('cash');
     } catch(e) { Toast.error(e.message); }
+  },
+  async deleteTransaction(id, type, amount) {
+    if (!confirm(`¿Está seguro de eliminar este movimiento de $${amount.toFixed(2)}?\n\nAl eliminarlo, se restará este monto de los cálculos en la vista de la caja actual (Apertura, Ventas, etc).`)) return;
+    try {
+      await API.del(`/api/cash/transaction/${id}`);
+      Toast.success('Movimiento eliminado de la caja');
+      App.navigate('cash'); // Recargar para recalcular
+    } catch(e) {
+      Toast.error(e.message);
+    }
+  },
+  async deleteSession(id) {
+    if (!confirm('¿Está seguro de eliminar este historial de sesión?\\n\\nEsto eliminará también los movimientos de dinero asociados a esta caja (las ventas registradas NO se borrarán, seguirán en el sistema).')) return;
+    try {
+      await API.del(`/api/cash/session/${id}`);
+      Toast.success('Sesión eliminada correctamente');
+      App.navigate('cash');
+    } catch(e) {
+      Toast.error(e.message);
+    }
   }
 };

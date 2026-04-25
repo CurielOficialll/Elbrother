@@ -74,65 +74,64 @@ router.post('/', authenticateToken, (req, res) => {
     }
     const purchase_number = `${prefix}${seq.toString().padStart(4, '0')}`;
 
-    db.exec('BEGIN TRANSACTION');
+    const processPurchase = db.transaction(() => {
+      const insertPurchase = db.prepare(`
+        INSERT INTO purchases (purchase_number, supplier_id, user_id, subtotal, total, payment_method, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      const purchaseResult = insertPurchase.run(purchase_number, supplier_id, req.user.id, subtotal, total, payment_method, notes);
+      const purchaseId = purchaseResult.lastInsertRowid;
 
-    const insertPurchase = db.prepare(`
-      INSERT INTO purchases (purchase_number, supplier_id, user_id, subtotal, total, payment_method, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    const purchaseResult = insertPurchase.run(purchase_number, supplier_id, req.user.id, subtotal, total, payment_method, notes);
-    const purchaseId = purchaseResult.lastInsertRowid;
+      const insertItem = db.prepare(`
+        INSERT INTO purchase_items (purchase_id, product_id, quantity, unit_cost, total)
+        VALUES (?, ?, ?, ?, ?)
+      `);
 
-    const insertItem = db.prepare(`
-      INSERT INTO purchase_items (purchase_id, product_id, quantity, unit_cost, total)
-      VALUES (?, ?, ?, ?, ?)
-    `);
+      const updateProductStock = db.prepare(`
+        UPDATE products SET stock = stock + ?, cost_price = ?, updated_at = datetime('now') WHERE id = ?
+      `);
 
-    const updateProductStock = db.prepare(`
-      UPDATE products SET stock = stock + ?, cost_price = ?, updated_at = datetime('now') WHERE id = ?
-    `);
+      const logStockMovement = db.prepare(`
+        INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, notes, user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
 
-    const logStockMovement = db.prepare(`
-      INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, notes, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+      for (const item of items) {
+        const itemTotal = item.quantity * item.unit_cost;
+        insertItem.run(purchaseId, item.product_id, item.quantity, item.unit_cost, itemTotal);
 
-    for (const item of items) {
-      const itemTotal = item.quantity * item.unit_cost;
-      insertItem.run(purchaseId, item.product_id, item.quantity, item.unit_cost, itemTotal);
+        // Get previous stock
+        const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
+        const prevStock = product ? product.stock : 0;
+        const newStock = prevStock + item.quantity;
 
-      // Get previous stock
-      const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
-      const prevStock = product ? product.stock : 0;
-      const newStock = prevStock + item.quantity;
+        // Update product stock and cost
+        updateProductStock.run(item.quantity, item.unit_cost, item.product_id);
 
-      // Update product stock and cost
-      updateProductStock.run(item.quantity, item.unit_cost, item.product_id);
+        // Log movement
+        logStockMovement.run(item.product_id, 'purchase', item.quantity, prevStock, newStock, purchase_number, 'Ingreso por compra', req.user.id);
+      }
 
-      // Log movement
-      logStockMovement.run(item.product_id, 'purchase', item.quantity, prevStock, newStock, purchase_number, 'Ingreso por compra', req.user.id);
-    }
+      // Handle account payable if credit
+      if (payment_method === 'credit') {
+        db.prepare(`
+          INSERT INTO accounts_payable (supplier_id, purchase_id, amount, balance, status)
+          VALUES (?, ?, ?, ?, 'active')
+        `).run(supplier_id, purchaseId, total, total);
+      }
 
-    // Handle account payable if credit
-    if (payment_method === 'credit') {
-      db.prepare(`
-        INSERT INTO accounts_payable (supplier_id, purchase_id, amount, balance, status)
-        VALUES (?, ?, ?, ?, 'active')
-      `).run(supplier_id, purchaseId, total, total);
-    }
+      // Audit log
+      db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
+        req.user.id, 'create_purchase', 'purchase', purchaseId, `Compra ${purchase_number} por $${total.toFixed(2)}`
+      );
 
-    // Audit log
-    db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
-      req.user.id, 'create_purchase', 'purchase', purchaseId, `Compra ${purchase_number} por $${total.toFixed(2)}`
-    );
+      return purchaseId;
+    });
 
-    db.exec('COMMIT');
-    saveDb();
+    const purchaseId = processPurchase();
     
     res.status(201).json({ id: purchaseId, message: 'Compra registrada con éxito' });
   } catch (err) {
-    const db = getDb();
-    if (db.inTransaction) db.exec('ROLLBACK');
     res.status(500).json({ error: err.message });
   }
 });
@@ -163,40 +162,84 @@ router.post('/payables/:id/pay', authenticateToken, (req, res) => {
     
     if (!amount || amount <= 0) return res.status(400).json({ error: 'Monto inválido' });
 
-    db.exec('BEGIN TRANSACTION');
+    const processPayment = db.transaction(() => {
+      const payable = db.prepare('SELECT * FROM accounts_payable WHERE id = ?').get(req.params.id);
+      if (!payable) {
+        throw new Error('Cuenta por pagar no encontrada');
+      }
 
-    const payable = db.prepare('SELECT * FROM accounts_payable WHERE id = ?').get(req.params.id);
-    if (!payable) {
-      db.exec('ROLLBACK');
-      return res.status(404).json({ error: 'Cuenta por pagar no encontrada' });
-    }
+      if (payable.balance < amount) {
+        throw new Error('El monto es mayor al saldo deudor');
+      }
 
-    if (payable.balance < amount) {
-      db.exec('ROLLBACK');
-      return res.status(400).json({ error: 'El monto es mayor al saldo deudor' });
-    }
+      const newBalance = payable.balance - amount;
+      const status = newBalance <= 0 ? 'paid' : 'active';
 
-    const newBalance = payable.balance - amount;
-    const status = newBalance <= 0 ? 'paid' : 'active';
+      db.prepare(`UPDATE accounts_payable SET balance = ?, status = ? WHERE id = ?`).run(newBalance, status, payable.id);
 
-    db.prepare(`UPDATE accounts_payable SET balance = ?, status = ? WHERE id = ?`).run(newBalance, status, payable.id);
+      db.prepare(`
+        INSERT INTO payable_payments (account_payable_id, amount, payment_method, reference, notes, user_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(payable.id, amount, payment_method, reference, notes, req.user.id);
 
-    db.prepare(`
-      INSERT INTO payable_payments (account_payable_id, amount, payment_method, reference, notes, user_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(payable.id, amount, payment_method, reference, notes, req.user.id);
+      db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
+        req.user.id, 'payable_payment', 'payable', payable.id, `Abono de $${amount.toFixed(2)}`
+      );
 
-    db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
-      req.user.id, 'payable_payment', 'payable', payable.id, `Abono de $${amount.toFixed(2)}`
-    );
+      return newBalance;
+    });
 
-    db.exec('COMMIT');
-    saveDb();
+    const newBalance = processPayment();
 
     res.json({ message: 'Pago registrado con éxito', balance: newBalance });
   } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE /api/purchases/:id - Eliminar una compra completamente (restaura stock)
+router.delete('/:id', authenticateToken, (req, res) => {
+  try {
     const db = getDb();
-    if (db.inTransaction) db.exec('ROLLBACK');
+    const purchase = db.prepare('SELECT * FROM purchases WHERE id = ?').get(req.params.id);
+    if (!purchase) return res.status(404).json({ error: 'Compra no encontrada' });
+
+    db.transaction(() => {
+      // 1. Revertir stock de productos
+      const items = db.prepare('SELECT * FROM purchase_items WHERE purchase_id = ?').all(purchase.id);
+      for (const item of items) {
+        const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
+        if (product) {
+          const newStock = (product.stock || 0) - item.quantity;
+          db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?").run(newStock, item.product_id);
+          // Registrar movimiento de stock de anulación
+          db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'out', ?, ?, ?, ?, ?)").run(
+            item.product_id, item.quantity, product.stock, newStock, `Eliminación ${purchase.purchase_number}`, req.user.id
+          );
+        }
+      }
+
+      // 2. Eliminar items de la compra
+      db.prepare('DELETE FROM purchase_items WHERE purchase_id = ?').run(purchase.id);
+
+      // 3. Eliminar movimientos de stock originales de la compra
+      db.prepare('DELETE FROM stock_movements WHERE reference = ? AND type = "purchase"').run(purchase.purchase_number);
+
+      // 4. Eliminar pagos y cuenta por pagar asociada si fue a crédito
+      db.prepare('DELETE FROM payable_payments WHERE account_payable_id IN (SELECT id FROM accounts_payable WHERE purchase_id = ?)').run(purchase.id);
+      db.prepare('DELETE FROM accounts_payable WHERE purchase_id = ?').run(purchase.id);
+
+      // 5. Eliminar la compra
+      db.prepare('DELETE FROM purchases WHERE id = ?').run(purchase.id);
+
+      // 6. Registrar en log
+      db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
+        req.user.id, 'delete_purchase', 'purchase', purchase.id, `Compra ${purchase.purchase_number} eliminada: $${purchase.total.toFixed(2)}`
+      );
+    })();
+
+    res.json({ message: `Compra ${purchase.purchase_number} eliminada` });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

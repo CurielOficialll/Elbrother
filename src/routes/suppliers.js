@@ -52,4 +52,31 @@ router.post('/', authenticateToken, (req, res) => {
   }
 });
 
+// DELETE /api/suppliers/:id
+router.delete('/:id', authenticateToken, (req, res) => {
+  try {
+    const db = getDb();
+    
+    // Verificamos si tiene cuentas por pagar pendientes
+    const payables = db.prepare('SELECT COUNT(*) as count FROM accounts_payable WHERE supplier_id = ? AND status = "active"').get(req.params.id);
+    if (payables && payables.count > 0) {
+      return res.status(400).json({ error: 'No se puede eliminar: el proveedor tiene cuentas por pagar pendientes.' });
+    }
+
+    const stmt = db.prepare('UPDATE suppliers SET active = 0 WHERE id = ?');
+    const result = stmt.run(req.params.id);
+    
+    if (result.changes === 0) return res.status(404).json({ error: 'Proveedor no encontrado' });
+    
+    // Registrar en log
+    db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
+      req.user.id, 'delete_supplier', 'supplier', req.params.id, `Proveedor eliminado`
+    );
+
+    res.json({ message: 'Proveedor eliminado' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

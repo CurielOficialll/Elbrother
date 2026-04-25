@@ -61,4 +61,66 @@ router.get('/history', authenticateToken, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// DELETE /api/cash/transaction/:id - Delete a specific movement
+router.delete('/transaction/:id', authenticateToken, (req, res) => {
+  try {
+    const db = getDb();
+    
+    db.transaction(() => {
+      const trx = db.prepare('SELECT * FROM cash_transactions WHERE id = ?').get(req.params.id);
+      if (!trx) throw new Error('Movimiento no encontrado');
+      
+      const session = db.prepare('SELECT status FROM cash_sessions WHERE id = ?').get(trx.session_id);
+      if (session && session.status !== 'open') {
+        throw new Error('No se pueden eliminar movimientos de una caja que ya está cerrada');
+      }
+
+      // If it's an opening transaction, reset opening_amount in session
+      if (trx.type === 'opening') {
+         db.prepare('UPDATE cash_sessions SET opening_amount = 0 WHERE id = ?').run(trx.session_id);
+      }
+
+      db.prepare('DELETE FROM cash_transactions WHERE id = ?').run(trx.id);
+      
+      db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
+        req.user.id, 'delete_cash_trx', 'cash_transaction', trx.id, `Eliminado mov. ${trx.type} por $${trx.amount.toFixed(2)}`
+      );
+    })();
+    
+    res.json({ message: 'Movimiento eliminado correctamente' });
+  } catch (err) { 
+    res.status(400).json({ error: err.message }); 
+  }
+});
+
+// DELETE /api/cash/session/:id - Delete a cash session
+router.delete('/session/:id', authenticateToken, (req, res) => {
+  try {
+    const db = getDb();
+    
+    db.transaction(() => {
+      const session = db.prepare('SELECT * FROM cash_sessions WHERE id = ?').get(req.params.id);
+      if (!session) throw new Error('Sesión no encontrada');
+      if (session.status === 'open') throw new Error('No se puede eliminar una sesión abierta');
+
+      // Set session_id to null in sales to avoid foreign key issues
+      db.prepare('UPDATE sales SET session_id = NULL WHERE session_id = ?').run(session.id);
+      
+      // Delete associated cash_transactions
+      db.prepare('DELETE FROM cash_transactions WHERE session_id = ?').run(session.id);
+
+      // Delete the session
+      db.prepare('DELETE FROM cash_sessions WHERE id = ?').run(session.id);
+      
+      db.prepare('INSERT INTO activity_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)').run(
+        req.user.id, 'delete_cash_session', 'cash_session', session.id, `Sesión eliminada`
+      );
+    })();
+    
+    res.json({ message: 'Sesión eliminada correctamente' });
+  } catch (err) { 
+    res.status(400).json({ error: err.message }); 
+  }
+});
+
 module.exports = router;
