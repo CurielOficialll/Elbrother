@@ -1,6 +1,6 @@
-<![CDATA[# 🔵 ELBROTHER POS v2.5.3
+# 🔵 ELBROTHER POS v2.5.4
 
-![Version](https://img.shields.io/badge/version-2.5.3-blue)
+![Version](https://img.shields.io/badge/version-2.5.4-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -268,4 +268,3 @@ El script ejecuta:
 - [Modelo de Datos](docs/DATABASE.md)
 - [API Reference](docs/API.md)
 - [Guía de Usuario](docs/USER_GUIDE.md)
-]]>

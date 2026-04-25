@@ -1,4 +1,4 @@
-<![CDATA[# 📡 API Reference — Elbrother POS
+# 📡 API Reference — Elbrother POS
 
 > **Base URL:** `http://localhost:3000/api`  
 > **Autenticación:** JWT via cookie `token` o header `Authorization: Bearer <token>`  
@@ -295,4 +295,3 @@ Obtiene la tasa BCV actual (no requiere auth).
 **Leyenda:**
 - 🔒 = Requiere autenticación (JWT)
 - 🛡️ = Requiere rol `admin`
-]]>

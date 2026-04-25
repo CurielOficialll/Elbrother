@@ -1,4 +1,4 @@
-<![CDATA[# 🗄️ Modelo de Datos — Elbrother POS
+# 🗄️ Modelo de Datos — Elbrother POS
 
 ## Diagrama Entidad-Relación
 
@@ -255,4 +255,3 @@ erDiagram
 | idx_credits_client | credits | client_id | Créditos por cliente |
 | idx_purchases_date | purchases | created_at | Compras por fecha |
 | idx_accounts_payable_supplier | accounts_payable | supplier_id | Deudas por proveedor |
-]]>

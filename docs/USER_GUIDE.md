@@ -1,4 +1,4 @@
-<![CDATA[# 📖 Guía de Usuario — Elbrother POS
+# 📖 Guía de Usuario — Elbrother POS
 
 ## Inicio de Sesión
 
@@ -197,4 +197,3 @@ El panel principal muestra un resumen en tiempo real:
 | **Tasa BCV** | Tasa de cambio oficial Bolívar/USD |
 | **Conciliación** | Comparación entre monto esperado y real en caja |
 | **Velopack** | Sistema de actualizaciones delta para apps de escritorio |
-]]>
