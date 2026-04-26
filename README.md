@@ -1,6 +1,6 @@
-# 🔵 ELBROTHER POS v2.5.10
+# 🔵 ELBROTHER POS v2.5.11
 
-![Version](https://img.shields.io/badge/version-2.5.10-blue)
+![Version](https://img.shields.io/badge/version-2.5.11-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -255,6 +255,7 @@ El script ejecuta:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 2.5.11 | 2026-04-26 | Selector de cliente obligatorio para ventas a crédito (Fiado) en el POS |
 | 2.5.10 | 2026-04-26 | Sistema de actualización híbrido interno (Velopack + GitHub API) |
 | 2.5.5 | 2026-04-26 | Integración de Velopack para actualizaciones delta automáticas |
 | 2.5.4 | 2026-04-25 | Mitigación XSS, auth bcrypt asíncrono, migración a better-sqlite3 |

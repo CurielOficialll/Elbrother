@@ -1,10 +1,11 @@
 window.POSPage = {
-  products: [], categories: [], selectedCategory: null, _method: null,
+  products: [], categories: [], clients: [], selectedCategory: null, _method: null, selectedClient: null,
   async render() {
     try {
       this.categories = await API.get('/api/categories');
       this.products = await API.get('/api/products');
-    } catch(e) { this.products = []; this.categories = []; }
+      this.clients = await API.get('/api/clients');
+    } catch(e) { this.products = []; this.categories = []; this.clients = []; }
     Store.off('cart');
     Store.on('cart', () => this.renderCart());
     return `<div class="pos-layout">
@@ -69,6 +70,13 @@ window.POSPage = {
       <button class="btn btn-outline pay-method-btn ${POSPage._method==='biopago'?'pay-method-active':''}" onclick="POSPage.selectMethod('biopago',this)" ${!cart.length?'disabled':''}><span class="material-symbols-outlined">fingerprint</span>Biopago</button>
       <button class="btn btn-outline pay-method-btn ${POSPage._method==='credit'?'pay-method-active':''}" onclick="POSPage.selectMethod('credit',this)" ${!cart.length?'disabled':''}><span class="material-symbols-outlined">schedule</span>Fiado</button>
     </div>
+    ${POSPage._method === 'credit' ? `
+    <div style="margin: 12px 0;">
+      <select class="input" style="width: 100%; padding: 8px;" onchange="POSPage.selectedClient = this.value">
+        <option value="">-- Seleccionar Cliente --</option>
+        ${POSPage.clients.map(c => `<option value="${c.id}" ${POSPage.selectedClient == c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+      </select>
+    </div>` : ''}
     <button class="btn btn-confirm-sale" onclick="POSPage.confirmSale()" ${!cart.length || !POSPage._method?'disabled':''}><span class="material-symbols-outlined">check_circle</span>Confirmar Venta</button>`;
   },
   addToCart(id) {
@@ -92,20 +100,20 @@ window.POSPage = {
   },
   selectMethod(method, el) {
     this._method = method;
-    document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('pay-method-active'));
-    if (el) el.classList.add('pay-method-active');
-    const confirmBtn = document.querySelector('.btn-confirm-sale');
-    if (confirmBtn) confirmBtn.disabled = false;
+    if (method !== 'credit') this.selectedClient = null;
+    document.getElementById('cart-totals').innerHTML = this.renderTotals();
   },
   async confirmSale() {
     const cart = Store.get('cart');
     if (!cart.length) return;
     if (!this._method) { Toast.error('Seleccione un método de pago'); return; }
+    if (this._method === 'credit' && !this.selectedClient) { Toast.error('Seleccione el cliente para fiar'); return; }
     try {
       const items = cart.map(i => ({ product_id: i.product_id, quantity: i.quantity }));
-      const result = await API.post('/api/sales', { items, payment_method: this._method });
+      const result = await API.post('/api/sales', { items, payment_method: this._method, client_id: this.selectedClient });
       Store.clearCart();
       this._method = null;
+      this.selectedClient = null;
       Sounds.play('success');
       const rate = Store.get('bcvRate') || 483.87;
       Toast.success(`Venta ${result.sale_number}: Bs. ${(result.total * rate).toFixed(2)} ($${result.total.toFixed(2)})`);
