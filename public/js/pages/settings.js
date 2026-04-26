@@ -103,22 +103,40 @@ window.SettingsPage = {
     try {
       const update = await window.elbrother.checkForUpdates();
       if (update) {
+        const isGH = update.isGitHubFallback;
+        const version = isGH ? update.version : update.targetFullRelease?.version;
         if (statusText) statusText.textContent = '¡Actualización encontrada!';
         if (resultDiv) {
           resultDiv.classList.remove('hidden');
-          resultDiv.innerHTML = `
-            <div style="display:flex;align-items:center;gap:12px">
-              <span class="material-symbols-outlined" style="font-size:40px;color:var(--success)">upgrade</span>
-              <div style="flex:1">
-                <div style="font-weight:700;font-size:16px;color:var(--success)">v${update.targetFullRelease.version} disponible</div>
-                <div style="font-size:12px;color:var(--outline);margin-top:4px">Haz clic en "Instalar" para descargar y aplicar</div>
+          if (isGH) {
+            // Fallback GitHub: mostrar botón para descargar el instalador
+            resultDiv.innerHTML = `
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="material-symbols-outlined" style="font-size:40px;color:var(--success)">upgrade</span>
+                <div style="flex:1">
+                  <div style="font-weight:700;font-size:16px;color:var(--success)">v${version} disponible</div>
+                  <div style="font-size:12px;color:var(--outline);margin-top:4px">Se descargará el instalador. Ejecútalo para actualizar.</div>
+                </div>
+                <button class="btn btn-success btn-sm" onclick="SettingsPage.installUpdate()">
+                  <span class="material-symbols-outlined">download</span>Descargar
+                </button>
               </div>
-              <button class="btn btn-success btn-sm" onclick="SettingsPage.installUpdate()">
-                <span class="material-symbols-outlined">download</span>Instalar
-              </button>
-            </div>
-          `;
-          // Guardar la info para usar en installUpdate
+            `;
+          } else {
+            // Velopack: instalación automática
+            resultDiv.innerHTML = `
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="material-symbols-outlined" style="font-size:40px;color:var(--success)">upgrade</span>
+                <div style="flex:1">
+                  <div style="font-weight:700;font-size:16px;color:var(--success)">v${version} disponible</div>
+                  <div style="font-size:12px;color:var(--outline);margin-top:4px">Haz clic en "Instalar" para descargar y aplicar automáticamente</div>
+                </div>
+                <button class="btn btn-success btn-sm" onclick="SettingsPage.installUpdate()">
+                  <span class="material-symbols-outlined">download</span>Instalar
+                </button>
+              </div>
+            `;
+          }
           SettingsPage._updateInfo = update;
         }
       } else {
@@ -141,7 +159,23 @@ window.SettingsPage = {
 
   async installUpdate() {
     if (!SettingsPage._updateInfo) return;
-    // Reutilizar el flujo de App
+
+    // Si es GitHub fallback, descargar directamente
+    if (SettingsPage._updateInfo.isGitHubFallback) {
+      try {
+        const result = await window.elbrother.downloadUpdates(SettingsPage._updateInfo);
+        if (result === 'external') {
+          Toast.success('Descarga iniciada en tu navegador. Ejecuta el instalador cuando termine.');
+        } else {
+          Toast.error('Error al iniciar la descarga');
+        }
+      } catch (e) {
+        Toast.error('Error: ' + e.message);
+      }
+      return;
+    }
+
+    // Velopack: flujo automático
     App._pendingUpdate = { updateInfo: SettingsPage._updateInfo };
     App.startUpdate();
   },

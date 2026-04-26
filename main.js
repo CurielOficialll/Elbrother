@@ -13,18 +13,75 @@ const { start } = require('./server');
 let mainWindow;
 
 // ═══════════════════════════════════════════
-//  AUTO-UPDATE — Configuración
+//  AUTO-UPDATE — Configuración Híbrida
+//  Intenta Velopack primero, luego fallback via GitHub API
 // ═══════════════════════════════════════════
 const UPDATE_URL = 'https://github.com/CurielOficialll/Elbrother';
+const GITHUB_API_RELEASES = 'https://api.github.com/repos/CurielOficialll/Elbrother/releases/latest';
+let _velopackAvailable = false;
 
 function getUpdateManager() {
   try {
-    return new UpdateManager(UPDATE_URL);
+    const um = new UpdateManager(UPDATE_URL);
+    _velopackAvailable = true;
+    return um;
   } catch (e) {
-    // En modo desarrollo, UpdateManager puede fallar porque no está instalado via Velopack
-    console.log('[UPDATE] No disponible en modo desarrollo:', e.message);
+    console.log('[UPDATE] Velopack no disponible:', e.message);
+    _velopackAvailable = false;
     return null;
   }
+}
+
+// --- Fallback: comparar versiones semver ---
+function compareVersions(current, remote) {
+  const parseVer = (v) => v.replace(/^v/, '').split('.').map(Number);
+  const c = parseVer(current);
+  const r = parseVer(remote);
+  for (let i = 0; i < 3; i++) {
+    if ((r[i] || 0) > (c[i] || 0)) return 1;  // remote es mayor
+    if ((r[i] || 0) < (c[i] || 0)) return -1; // current es mayor
+  }
+  return 0; // iguales
+}
+
+// --- Fallback: verificar updates via GitHub API ---
+async function checkUpdatesViaGitHub() {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: '/repos/CurielOficialll/Elbrother/releases/latest',
+      headers: { 'User-Agent': 'Elbrother-POS-Updater' }
+    };
+    https.get(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          const release = JSON.parse(data);
+          const remoteVersion = (release.tag_name || '').replace(/^v/, '');
+          const currentVersion = app.getVersion();
+          if (remoteVersion && compareVersions(currentVersion, remoteVersion) > 0) {
+            // Buscar el asset del setup de Velopack o portable
+            const setupAsset = release.assets?.find(a => a.name === 'elbrother-win-Setup.exe');
+            const portableAsset = release.assets?.find(a => a.name === 'elbrother-win-Portable.zip');
+            resolve({
+              version: remoteVersion,
+              currentVersion,
+              htmlUrl: release.html_url,
+              downloadUrl: setupAsset?.browser_download_url || portableAsset?.browser_download_url || release.html_url,
+              assetName: setupAsset?.name || portableAsset?.name || 'release',
+              isGitHubFallback: true
+            });
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
 }
 
 // --- Configuración de Base de Datos ---
@@ -118,54 +175,90 @@ ipcMain.handle('select-db-path', async () => {
 });
 
 // ═══════════════════════════════════════════
-//  IPC HANDLERS — Auto-Update (Velopack)
+//  IPC HANDLERS — Auto-Update (Híbrido: Velopack + GitHub Fallback)
 // ═══════════════════════════════════════════
 
 ipcMain.handle('check-for-updates', async () => {
+  // 1) Intentar Velopack primero
   const um = getUpdateManager();
-  if (!um) return null;
-  try {
-    const update = await um.checkForUpdatesAsync();
-    if (update) {
-      console.log(`[UPDATE] Nueva versión disponible: ${update.targetFullRelease.version}`);
-    } else {
-      console.log('[UPDATE] La app está actualizada');
+  if (um) {
+    try {
+      const update = await um.checkForUpdatesAsync();
+      if (update) {
+        console.log(`[UPDATE-VP] Nueva versión disponible: ${update.targetFullRelease.version}`);
+        return update;
+      }
+      console.log('[UPDATE-VP] La app está actualizada');
+    } catch (e) {
+      console.error('[UPDATE-VP] Error al verificar:', e.message);
     }
-    return update;
+  }
+
+  // 2) Fallback: consultar GitHub API directamente
+  try {
+    console.log('[UPDATE-GH] Verificando via GitHub API...');
+    const ghUpdate = await checkUpdatesViaGitHub();
+    if (ghUpdate) {
+      console.log(`[UPDATE-GH] Nueva versión disponible: v${ghUpdate.version}`);
+      return ghUpdate;
+    }
+    console.log('[UPDATE-GH] La app está actualizada');
+    return null;
   } catch (e) {
-    console.error('[UPDATE] Error al verificar:', e.message);
+    console.error('[UPDATE-GH] Error al verificar:', e.message);
     return null;
   }
 });
 
 ipcMain.handle('download-updates', async (event, updateInfo) => {
+  // Si es un update de GitHub fallback, descargar directamente
+  if (updateInfo?.isGitHubFallback) {
+    try {
+      console.log('[UPDATE-GH] Abriendo descarga en navegador...');
+      const { shell } = require('electron');
+      await shell.openExternal(updateInfo.downloadUrl);
+      return 'external';
+    } catch (e) {
+      console.error('[UPDATE-GH] Error al abrir descarga:', e.message);
+      return false;
+    }
+  }
+
+  // Velopack flow
   const um = getUpdateManager();
   if (!um) return false;
   try {
-    console.log('[UPDATE] Descargando actualización...');
+    console.log('[UPDATE-VP] Descargando actualización...');
     await um.downloadUpdates(updateInfo, (progress) => {
       mainWindow?.webContents.send('update-progress', progress);
     });
-    console.log('[UPDATE] Descarga completada');
+    console.log('[UPDATE-VP] Descarga completada');
     return true;
   } catch (e) {
-    console.error('[UPDATE] Error al descargar:', e.message);
+    console.error('[UPDATE-VP] Error al descargar:', e.message);
     return false;
   }
 });
 
 ipcMain.handle('apply-updates', async (event, updateInfo) => {
+  if (updateInfo?.isGitHubFallback) {
+    // Nada que aplicar: el usuario instalará manualmente
+    return false;
+  }
   const um = getUpdateManager();
   if (!um) return false;
   try {
-    console.log('[UPDATE] Aplicando actualización y reiniciando...');
+    console.log('[UPDATE-VP] Aplicando actualización y reiniciando...');
     await um.applyUpdatesAndRestart(updateInfo);
     return true;
   } catch (e) {
-    console.error('[UPDATE] Error al aplicar:', e.message);
+    console.error('[UPDATE-VP] Error al aplicar:', e.message);
     return false;
   }
 });
+
+// Exponer si Velopack está realmente activo
+ipcMain.handle('is-velopack-available', () => _velopackAvailable);
 
 // ═══════════════════════════════════════════
 //  ARRANQUE DE LA APP
@@ -191,17 +284,30 @@ app.whenReady().then(async () => {
 
   // ═══════════════════════════════════════════
   //  AUTO-CHECK — Verificar updates 15s después del arranque
+  //  Usa sistema híbrido (Velopack + GitHub fallback)
   // ═══════════════════════════════════════════
   setTimeout(async () => {
-    const um = getUpdateManager();
-    if (!um) return;
     try {
-      const update = await um.checkForUpdatesAsync();
-      if (update) {
-        console.log(`[UPDATE] Auto-check: v${update.targetFullRelease.version} disponible`);
+      // Intentar Velopack
+      const um = getUpdateManager();
+      if (um) {
+        const update = await um.checkForUpdatesAsync();
+        if (update) {
+          console.log(`[UPDATE-VP] Auto-check: v${update.targetFullRelease.version} disponible`);
+          mainWindow?.webContents.send('update-available', {
+            version: update.targetFullRelease.version,
+            updateInfo: update
+          });
+          return;
+        }
+      }
+      // Fallback GitHub
+      const ghUpdate = await checkUpdatesViaGitHub();
+      if (ghUpdate) {
+        console.log(`[UPDATE-GH] Auto-check: v${ghUpdate.version} disponible`);
         mainWindow?.webContents.send('update-available', {
-          version: update.targetFullRelease.version,
-          updateInfo: update
+          version: ghUpdate.version,
+          updateInfo: ghUpdate
         });
       }
     } catch (e) {
