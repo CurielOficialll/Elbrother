@@ -1,6 +1,6 @@
 {
   "name": "elbrother-pos",
-  "version": "2.5.7",
+  "version": "2.5.8",
   "description": "Sistema Elbrother POS - Inventario y Punto de Venta Local",
   "main": "main.js",
   "scripts": {
