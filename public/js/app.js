@@ -124,23 +124,6 @@ window.App = {
 
     const updateInfo = this._pendingUpdate.updateInfo;
 
-    // Si es GitHub fallback, descargar directamente via navegador
-    if (updateInfo?.isGitHubFallback) {
-      try {
-        const result = await window.elbrother.downloadUpdates(updateInfo);
-        if (result === 'external') {
-          Toast.success('Descarga iniciada en tu navegador. Ejecuta el instalador cuando termine.');
-          this.dismissUpdateBanner();
-        } else {
-          Toast.error('Error al iniciar la descarga');
-        }
-      } catch (e) {
-        Toast.error('Error: ' + e.message);
-      }
-      return;
-    }
-
-    // Velopack: flujo automático
     const btn = document.getElementById('update-start-btn');
     if (btn) {
       btn.disabled = true;
@@ -158,11 +141,17 @@ window.App = {
     try {
       const success = await window.elbrother.downloadUpdates(updateInfo);
       if (success) {
-        if (btn) btn.innerHTML = '<span class="material-symbols-outlined">restart_alt</span>Reiniciando...';
-        Toast.success('Actualización descargada. Reiniciando...');
-        setTimeout(async () => {
-          await window.elbrother.applyUpdates(updateInfo);
-        }, 1500);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined">restart_alt</span>Instalar y Reiniciar';
+          btn.onclick = async () => {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span>Instalando...';
+            Toast.info('Instalando actualización... La app se cerrará para aplicar los cambios.');
+            await window.elbrother.applyUpdates(updateInfo);
+          };
+        }
+        Toast.success('Descarga completada. Haz clic en "Instalar y Reiniciar" para aplicar.');
       } else {
         Toast.error('Error al descargar la actualización');
         if (btn) {

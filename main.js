@@ -62,15 +62,16 @@ async function checkUpdatesViaGitHub() {
           const remoteVersion = (release.tag_name || '').replace(/^v/, '');
           const currentVersion = app.getVersion();
           if (remoteVersion && compareVersions(currentVersion, remoteVersion) > 0) {
-            // Buscar el asset del setup de Velopack o portable
             const setupAsset = release.assets?.find(a => a.name === 'elbrother-win-Setup.exe');
             const portableAsset = release.assets?.find(a => a.name === 'elbrother-win-Portable.zip');
+            const asset = setupAsset || portableAsset;
             resolve({
               version: remoteVersion,
               currentVersion,
               htmlUrl: release.html_url,
-              downloadUrl: setupAsset?.browser_download_url || portableAsset?.browser_download_url || release.html_url,
-              assetName: setupAsset?.name || portableAsset?.name || 'release',
+              downloadUrl: asset?.browser_download_url || release.html_url,
+              assetName: asset?.name || 'release',
+              assetSize: asset?.size || 0,
               isGitHubFallback: true
             });
           } else {
@@ -81,6 +82,61 @@ async function checkUpdatesViaGitHub() {
         }
       });
     }).on('error', reject);
+  });
+}
+
+// --- Fallback: descargar archivo desde URL con redirecciones y progreso ---
+let _downloadedInstallerPath = null;
+
+function downloadFileWithProgress(url, destPath, totalSize) {
+  const https = require('https');
+  const http = require('http');
+  return new Promise((resolve, reject) => {
+    const makeRequest = (requestUrl) => {
+      const client = requestUrl.startsWith('https') ? https : http;
+      client.get(requestUrl, { headers: { 'User-Agent': 'Elbrother-POS-Updater' } }, (res) => {
+        // Manejar redirecciones (GitHub usa 302)
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          console.log(`[UPDATE-GH] Redirigiendo a: ${res.headers.location.substring(0, 80)}...`);
+          makeRequest(res.headers.location);
+          return;
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+        const fileSize = parseInt(res.headers['content-length'] || totalSize || 0, 10);
+        const file = fs.createWriteStream(destPath);
+        let downloaded = 0;
+        let lastProgress = 0;
+
+        res.on('data', (chunk) => {
+          downloaded += chunk.length;
+          file.write(chunk);
+          if (fileSize > 0) {
+            const progress = Math.round((downloaded / fileSize) * 100);
+            if (progress !== lastProgress) {
+              lastProgress = progress;
+              mainWindow?.webContents.send('update-progress', progress);
+            }
+          }
+        });
+
+        res.on('end', () => {
+          file.end();
+          mainWindow?.webContents.send('update-progress', 100);
+          console.log(`[UPDATE-GH] Descarga completada: ${destPath}`);
+          resolve(destPath);
+        });
+
+        res.on('error', (e) => {
+          file.end();
+          fs.unlinkSync(destPath);
+          reject(e);
+        });
+      }).on('error', reject);
+    };
+    makeRequest(url);
   });
 }
 
@@ -211,15 +267,23 @@ ipcMain.handle('check-for-updates', async () => {
 });
 
 ipcMain.handle('download-updates', async (event, updateInfo) => {
-  // Si es un update de GitHub fallback, descargar directamente
+  // GitHub fallback: descargar el instalador internamente
   if (updateInfo?.isGitHubFallback) {
     try {
-      console.log('[UPDATE-GH] Abriendo descarga en navegador...');
-      const { shell } = require('electron');
-      await shell.openExternal(updateInfo.downloadUrl);
-      return 'external';
+      const os = require('os');
+      const tempDir = path.join(os.tmpdir(), 'elbrother-updates');
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+      const destPath = path.join(tempDir, updateInfo.assetName || 'elbrother-win-Setup.exe');
+      // Limpiar descarga anterior si existe
+      if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+
+      console.log(`[UPDATE-GH] Descargando ${updateInfo.downloadUrl}`);
+      console.log(`[UPDATE-GH] Destino: ${destPath}`);
+      await downloadFileWithProgress(updateInfo.downloadUrl, destPath, updateInfo.assetSize);
+      _downloadedInstallerPath = destPath;
+      return true;
     } catch (e) {
-      console.error('[UPDATE-GH] Error al abrir descarga:', e.message);
+      console.error('[UPDATE-GH] Error al descargar:', e.message);
       return false;
     }
   }
@@ -241,10 +305,33 @@ ipcMain.handle('download-updates', async (event, updateInfo) => {
 });
 
 ipcMain.handle('apply-updates', async (event, updateInfo) => {
+  // GitHub fallback: ejecutar el instalador descargado y cerrar la app
   if (updateInfo?.isGitHubFallback) {
-    // Nada que aplicar: el usuario instalará manualmente
-    return false;
+    if (!_downloadedInstallerPath || !fs.existsSync(_downloadedInstallerPath)) {
+      console.error('[UPDATE-GH] No se encontró el instalador descargado');
+      return false;
+    }
+    try {
+      console.log(`[UPDATE-GH] Ejecutando instalador: ${_downloadedInstallerPath}`);
+      const { spawn } = require('child_process');
+      // Ejecutar el instalador de forma desacoplada del proceso actual
+      const child = spawn(_downloadedInstallerPath, [], {
+        detached: true,
+        stdio: 'ignore'
+      });
+      child.unref();
+      // Cerrar la app después de un breve delay
+      setTimeout(() => {
+        app.quit();
+      }, 1000);
+      return true;
+    } catch (e) {
+      console.error('[UPDATE-GH] Error al ejecutar instalador:', e.message);
+      return false;
+    }
   }
+
+  // Velopack flow
   const um = getUpdateManager();
   if (!um) return false;
   try {

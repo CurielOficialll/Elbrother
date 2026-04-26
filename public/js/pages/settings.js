@@ -108,35 +108,27 @@ window.SettingsPage = {
         if (statusText) statusText.textContent = '¡Actualización encontrada!';
         if (resultDiv) {
           resultDiv.classList.remove('hidden');
-          if (isGH) {
-            // Fallback GitHub: mostrar botón para descargar el instalador
-            resultDiv.innerHTML = `
-              <div style="display:flex;align-items:center;gap:12px">
-                <span class="material-symbols-outlined" style="font-size:40px;color:var(--success)">upgrade</span>
-                <div style="flex:1">
-                  <div style="font-weight:700;font-size:16px;color:var(--success)">v${version} disponible</div>
-                  <div style="font-size:12px;color:var(--outline);margin-top:4px">Se descargará el instalador. Ejecútalo para actualizar.</div>
-                </div>
-                <button class="btn btn-success btn-sm" onclick="SettingsPage.installUpdate()">
-                  <span class="material-symbols-outlined">download</span>Descargar
-                </button>
+          resultDiv.innerHTML = `
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="material-symbols-outlined" style="font-size:40px;color:var(--success)">upgrade</span>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:16px;color:var(--success)">v${version} disponible</div>
+                <div style="font-size:12px;color:var(--outline);margin-top:4px">Descarga e instala la actualización desde aquí</div>
               </div>
-            `;
-          } else {
-            // Velopack: instalación automática
-            resultDiv.innerHTML = `
-              <div style="display:flex;align-items:center;gap:12px">
-                <span class="material-symbols-outlined" style="font-size:40px;color:var(--success)">upgrade</span>
-                <div style="flex:1">
-                  <div style="font-weight:700;font-size:16px;color:var(--success)">v${version} disponible</div>
-                  <div style="font-size:12px;color:var(--outline);margin-top:4px">Haz clic en "Instalar" para descargar y aplicar automáticamente</div>
-                </div>
-                <button class="btn btn-success btn-sm" onclick="SettingsPage.installUpdate()">
-                  <span class="material-symbols-outlined">download</span>Instalar
-                </button>
+              <button class="btn btn-success btn-sm" onclick="SettingsPage.installUpdate()" id="settings-update-btn">
+                <span class="material-symbols-outlined">download</span>Descargar
+              </button>
+            </div>
+            <div class="hidden" id="settings-update-progress" style="margin-top:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="font-size:12px;color:var(--on-surface-variant)" id="settings-update-status">Descargando...</span>
+                <span style="font-size:12px;font-weight:700;color:var(--primary);margin-left:auto" id="settings-update-pct">0%</span>
               </div>
-            `;
-          }
+              <div style="width:100%;height:6px;background:var(--surface-highest);border-radius:3px;overflow:hidden">
+                <div id="settings-update-bar" style="height:100%;width:0%;background:var(--primary);border-radius:3px;transition:width 0.3s ease"></div>
+              </div>
+            </div>
+          `;
           SettingsPage._updateInfo = update;
         }
       } else {
@@ -160,24 +152,57 @@ window.SettingsPage = {
   async installUpdate() {
     if (!SettingsPage._updateInfo) return;
 
-    // Si es GitHub fallback, descargar directamente
-    if (SettingsPage._updateInfo.isGitHubFallback) {
-      try {
-        const result = await window.elbrother.downloadUpdates(SettingsPage._updateInfo);
-        if (result === 'external') {
-          Toast.success('Descarga iniciada en tu navegador. Ejecuta el instalador cuando termine.');
-        } else {
-          Toast.error('Error al iniciar la descarga');
-        }
-      } catch (e) {
-        Toast.error('Error: ' + e.message);
-      }
-      return;
+    const btn = document.getElementById('settings-update-btn');
+    const progressWrap = document.getElementById('settings-update-progress');
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span>Descargando...';
+    }
+    if (progressWrap) progressWrap.classList.remove('hidden');
+
+    // Escuchar progreso de descarga
+    const progressHandler = (progress) => {
+      const bar = document.getElementById('settings-update-bar');
+      const pct = document.getElementById('settings-update-pct');
+      const status = document.getElementById('settings-update-status');
+      if (bar) bar.style.width = `${progress}%`;
+      if (pct) pct.textContent = `${progress}%`;
+      if (status && progress >= 100) status.textContent = '¡Descarga completada!';
+    };
+    if (window.elbrother.onUpdateProgress) {
+      window.elbrother.onUpdateProgress(progressHandler);
     }
 
-    // Velopack: flujo automático
-    App._pendingUpdate = { updateInfo: SettingsPage._updateInfo };
-    App.startUpdate();
+    try {
+      const success = await window.elbrother.downloadUpdates(SettingsPage._updateInfo);
+      if (success) {
+        // Descarga exitosa: mostrar botón de instalar
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined">restart_alt</span>Instalar y Reiniciar';
+          btn.onclick = async () => {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span>Instalando...';
+            Toast.info('Instalando actualización... La app se cerrará para aplicar los cambios.');
+            await window.elbrother.applyUpdates(SettingsPage._updateInfo);
+          };
+        }
+        Toast.success('Descarga completada. Haz clic en "Instalar y Reiniciar" para aplicar.');
+      } else {
+        Toast.error('Error al descargar la actualización');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined">download</span>Reintentar';
+        }
+      }
+    } catch (e) {
+      Toast.error('Error: ' + e.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">download</span>Reintentar';
+      }
+    }
   },
 
   async saveConfig() {
