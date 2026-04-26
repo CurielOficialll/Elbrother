@@ -313,13 +313,12 @@ ipcMain.handle('apply-updates', async (event, updateInfo) => {
     }
     try {
       console.log(`[UPDATE-GH] Ejecutando instalador: ${_downloadedInstallerPath}`);
-      const { spawn } = require('child_process');
-      // Ejecutar el instalador de forma desacoplada del proceso actual
-      const child = spawn(_downloadedInstallerPath, [], {
-        detached: true,
-        stdio: 'ignore'
+      const { shell } = require('electron');
+      // Usar shell.openPath simula un doble clic, lo que evita errores de argumentos con espacios
+      shell.openPath(_downloadedInstallerPath).then((errorMsg) => {
+        if (errorMsg) console.error('[UPDATE-GH] Error de shell.openPath:', errorMsg);
       });
-      child.unref();
+      
       // Cerrar la app después de un breve delay
       setTimeout(() => {
         app.quit();
