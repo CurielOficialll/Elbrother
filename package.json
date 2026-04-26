@@ -43,7 +43,8 @@
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "velopack": "^0.0.1589-ga2c5a97"
   },
   "devDependencies": {
     "electron": "^41.3.0",

@@ -2,8 +2,24 @@ window.SettingsPage = {
   async render() {
     try {
       const config = await API.get('/api/system/config');
+      const currentVersion = window.elbrother ? await window.elbrother.getAppVersion() : 'dev';
       return `<div class="page-header"><h1 class="page-title">Configuración</h1></div>
       <div style="max-width:600px">
+
+        <div class="card" style="margin-bottom:16px; border-top: 2px solid var(--primary)">
+          <div class="card-header"><span class="card-title"><span class="material-symbols-outlined" style="vertical-align:middle;margin-right:8px;color:var(--primary)">system_update</span>Actualizaciones</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--on-surface)">Versión actual: <span style="color:var(--primary);font-family:var(--font-mono)">v${currentVersion}</span></div>
+              <div id="update-status-text" style="font-size:12px;color:var(--outline);margin-top:4px">Listo para verificar</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="SettingsPage.checkUpdates()" id="check-update-btn">
+              <span class="material-symbols-outlined">refresh</span>Buscar Actualizaciones
+            </button>
+          </div>
+          <div id="update-result" class="hidden" style="margin-top:12px;padding:12px;background:var(--surface-highest);border-radius:var(--radius);border:1px solid var(--outline-variant)"></div>
+        </div>
+
         <div class="card" style="margin-bottom:16px">
           <div class="card-header"><span class="card-title">Sistema</span></div>
           <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre del Negocio</label><input class="form-input" id="cfg-name" value="${config.business_name||'Elbrother'}"></div>
@@ -64,6 +80,72 @@ window.SettingsPage = {
       if(el) el.innerHTML = logs.slice(0,5).map(l=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--outline-variant)"><div><span style="font-weight:600">${l.user_name||'Sistema'}</span> <span style="color:var(--outline)">${l.action}</span> <span style="color:var(--on-surface-variant)">${l.details||''}</span></div><span style="color:var(--outline);font-size:12px">${Format.timeAgo(l.created_at)}</span></div>`).join('')||'<p style="color:var(--outline)">Sin actividad</p>';
     } catch(e) {}
   },
+
+  // ═══════════════════════════════════════════
+  //  AUTO-UPDATE — Buscar manualmente
+  // ═══════════════════════════════════════════
+  async checkUpdates() {
+    if (!window.elbrother || !window.elbrother.checkForUpdates) {
+      Toast.info('Auto-update solo disponible en la versión instalada');
+      return;
+    }
+
+    const btn = document.getElementById('check-update-btn');
+    const statusText = document.getElementById('update-status-text');
+    const resultDiv = document.getElementById('update-result');
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span>Buscando...';
+    }
+    if (statusText) statusText.textContent = 'Verificando con el servidor...';
+
+    try {
+      const update = await window.elbrother.checkForUpdates();
+      if (update) {
+        if (statusText) statusText.textContent = '¡Actualización encontrada!';
+        if (resultDiv) {
+          resultDiv.classList.remove('hidden');
+          resultDiv.innerHTML = `
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="material-symbols-outlined" style="font-size:40px;color:var(--success)">upgrade</span>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:16px;color:var(--success)">v${update.targetFullRelease.version} disponible</div>
+                <div style="font-size:12px;color:var(--outline);margin-top:4px">Haz clic en "Instalar" para descargar y aplicar</div>
+              </div>
+              <button class="btn btn-success btn-sm" onclick="SettingsPage.installUpdate()">
+                <span class="material-symbols-outlined">download</span>Instalar
+              </button>
+            </div>
+          `;
+          // Guardar la info para usar en installUpdate
+          SettingsPage._updateInfo = update;
+        }
+      } else {
+        if (statusText) statusText.textContent = '✓ Estás en la última versión';
+        if (resultDiv) {
+          resultDiv.classList.remove('hidden');
+          resultDiv.innerHTML = '<div style="text-align:center;color:var(--success);padding:8px"><span class="material-symbols-outlined" style="vertical-align:middle">check_circle</span> No hay actualizaciones disponibles</div>';
+        }
+      }
+    } catch (e) {
+      if (statusText) statusText.textContent = 'Error al verificar';
+      Toast.error('Error al buscar actualizaciones: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">refresh</span>Buscar Actualizaciones';
+      }
+    }
+  },
+
+  async installUpdate() {
+    if (!SettingsPage._updateInfo) return;
+    // Reutilizar el flujo de App
+    App._pendingUpdate = { updateInfo: SettingsPage._updateInfo };
+    App.startUpdate();
+  },
+
   async saveConfig() {
     try {
       const taxInput = document.getElementById('cfg-tax').value;

@@ -27,8 +27,10 @@ async function start(config = {}) {
   await initConnection();
   const { initDatabase } = require('./src/database/schema');
   const { seedDatabase } = require('./src/database/seed');
+  const { runMigrations } = require('./src/database/migrations');
   initDatabase();
   seedDatabase();
+  runMigrations();
 
   // Routes
   app.use('/api/auth', require('./src/routes/auth'));

@@ -1,9 +1,31 @@
+// ═══════════════════════════════════════════════════════════
+//  ⚠️  VELOPACK INIT — DEBE SER LA PRIMERA LÍNEA DEL ARCHIVO
+//  Maneja hooks de instalación/desinstalación del OS
+// ═══════════════════════════════════════════════════════════
+const { VelopackApp, UpdateManager } = require('velopack');
+VelopackApp.build().run();
+
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { start } = require('./server');
 
 let mainWindow;
+
+// ═══════════════════════════════════════════
+//  AUTO-UPDATE — Configuración
+// ═══════════════════════════════════════════
+const UPDATE_URL = 'https://github.com/CurielOficialll/Elbrother';
+
+function getUpdateManager() {
+  try {
+    return new UpdateManager(UPDATE_URL);
+  } catch (e) {
+    // En modo desarrollo, UpdateManager puede fallar porque no está instalado via Velopack
+    console.log('[UPDATE] No disponible en modo desarrollo:', e.message);
+    return null;
+  }
+}
 
 // --- Configuración de Base de Datos ---
 const configPath = path.join(app.getPath('userData'), 'config.json');
@@ -95,7 +117,55 @@ ipcMain.handle('select-db-path', async () => {
   return null;
 });
 
+// ═══════════════════════════════════════════
+//  IPC HANDLERS — Auto-Update (Velopack)
+// ═══════════════════════════════════════════
 
+ipcMain.handle('check-for-updates', async () => {
+  const um = getUpdateManager();
+  if (!um) return null;
+  try {
+    const update = await um.checkForUpdatesAsync();
+    if (update) {
+      console.log(`[UPDATE] Nueva versión disponible: ${update.targetFullRelease.version}`);
+    } else {
+      console.log('[UPDATE] La app está actualizada');
+    }
+    return update;
+  } catch (e) {
+    console.error('[UPDATE] Error al verificar:', e.message);
+    return null;
+  }
+});
+
+ipcMain.handle('download-updates', async (event, updateInfo) => {
+  const um = getUpdateManager();
+  if (!um) return false;
+  try {
+    console.log('[UPDATE] Descargando actualización...');
+    await um.downloadUpdates(updateInfo, (progress) => {
+      mainWindow?.webContents.send('update-progress', progress);
+    });
+    console.log('[UPDATE] Descarga completada');
+    return true;
+  } catch (e) {
+    console.error('[UPDATE] Error al descargar:', e.message);
+    return false;
+  }
+});
+
+ipcMain.handle('apply-updates', async (event, updateInfo) => {
+  const um = getUpdateManager();
+  if (!um) return false;
+  try {
+    console.log('[UPDATE] Aplicando actualización y reiniciando...');
+    await um.applyUpdatesAndRestart(updateInfo);
+    return true;
+  } catch (e) {
+    console.error('[UPDATE] Error al aplicar:', e.message);
+    return false;
+  }
+});
 
 // ═══════════════════════════════════════════
 //  ARRANQUE DE LA APP
@@ -118,6 +188,26 @@ app.whenReady().then(async () => {
     );
     app.quit();
   }
+
+  // ═══════════════════════════════════════════
+  //  AUTO-CHECK — Verificar updates 15s después del arranque
+  // ═══════════════════════════════════════════
+  setTimeout(async () => {
+    const um = getUpdateManager();
+    if (!um) return;
+    try {
+      const update = await um.checkForUpdatesAsync();
+      if (update) {
+        console.log(`[UPDATE] Auto-check: v${update.targetFullRelease.version} disponible`);
+        mainWindow?.webContents.send('update-available', {
+          version: update.targetFullRelease.version,
+          updateInfo: update
+        });
+      }
+    } catch (e) {
+      console.log('[UPDATE] Auto-check falló (ignorado):', e.message);
+    }
+  }, 15000);
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

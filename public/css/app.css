@@ -190,6 +190,56 @@ tr:hover td { background: rgba(0,224,255,0.03); }
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; color: var(--outline); text-align: center; }
 .empty-state .material-symbols-outlined { font-size: 64px; margin-bottom: 12px; opacity: 0.3; }
 
+/* ── Auto-Update Banner ── */
+.update-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: linear-gradient(135deg, rgba(0,95,109,0.95), rgba(0,50,70,0.97));
+  border-bottom: 2px solid var(--primary);
+  box-shadow: 0 4px 32px rgba(0,224,255,0.15);
+  animation: updateSlideDown 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.update-banner-hiding { animation: updateSlideUp 300ms ease forwards; }
+.update-banner-content {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 24px; max-width: 100%;
+}
+.update-banner-icon { font-size: 32px; color: var(--primary); animation: updatePulse 2s infinite; }
+.update-banner-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.update-banner-text strong { font-size: 14px; color: #fff; }
+.update-banner-text span { font-size: 12px; color: var(--primary-light); opacity: 0.8; }
+.update-banner-actions { display: flex; gap: 8px; align-items: center; }
+.update-progress-container {
+  position: relative; height: 6px;
+  background: rgba(0,0,0,0.3); overflow: hidden;
+}
+.update-progress-bar {
+  height: 100%; width: 0%; border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  transition: width 300ms ease;
+  position: relative;
+}
+.update-progress-bar::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 1.5s infinite;
+}
+.update-progress-text {
+  position: absolute; right: 12px; top: -20px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  color: var(--primary-light);
+}
+@keyframes updateSlideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes updateSlideUp { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+@keyframes updatePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(200%); } }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* Empujar contenido cuando el banner está visible */
+.update-banner ~ #app-shell .app-header { top: 56px; }
+.update-banner ~ #app-shell .sidebar { padding-top: 112px; }
+.update-banner ~ #app-shell .main-content { margin-top: 112px; }
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); }

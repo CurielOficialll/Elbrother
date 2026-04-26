@@ -12,6 +12,9 @@ window.App = {
     settings: () => SettingsPage.render()
   },
 
+  // Estado de actualización
+  _pendingUpdate: null,
+
   async init() {
     // Check auth
     try {
@@ -55,9 +58,116 @@ window.App = {
       });
     } catch (e) {}
 
+    // ═══════════════════════════════════════════
+    //  AUTO-UPDATE — Listeners
+    // ═══════════════════════════════════════════
+    if (window.elbrother && window.elbrother.onUpdateAvailable) {
+      window.elbrother.onUpdateAvailable((data) => {
+        this._pendingUpdate = data;
+        this.showUpdateBanner(data.version);
+      });
+
+      window.elbrother.onUpdateProgress((progress) => {
+        this.updateDownloadProgress(progress);
+      });
+    }
+
     // Hash routing
     window.addEventListener('hashchange', () => this.route());
   },
+
+  // ═══════════════════════════════════════════
+  //  AUTO-UPDATE — UI Methods
+  // ═══════════════════════════════════════════
+
+  showUpdateBanner(version) {
+    // Remover banner anterior si existe
+    const existing = document.getElementById('update-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'update-banner';
+    banner.className = 'update-banner';
+    banner.innerHTML = `
+      <div class="update-banner-content">
+        <span class="material-symbols-outlined update-banner-icon">system_update</span>
+        <div class="update-banner-text">
+          <strong>Nueva versión v${version} disponible</strong>
+          <span>Descarga e instala la actualización</span>
+        </div>
+        <div class="update-banner-actions">
+          <button class="btn btn-sm btn-outline" onclick="App.dismissUpdateBanner()" style="color:var(--on-surface);border-color:var(--outline)">Después</button>
+          <button class="btn btn-sm btn-primary" onclick="App.startUpdate()" id="update-start-btn">
+            <span class="material-symbols-outlined">download</span>Actualizar
+          </button>
+        </div>
+      </div>
+      <div class="update-progress-container hidden" id="update-progress-wrap">
+        <div class="update-progress-bar" id="update-progress-bar"></div>
+        <span class="update-progress-text" id="update-progress-text">0%</span>
+      </div>
+    `;
+
+    document.body.insertBefore(banner, document.body.firstChild);
+  },
+
+  dismissUpdateBanner() {
+    const banner = document.getElementById('update-banner');
+    if (banner) {
+      banner.classList.add('update-banner-hiding');
+      setTimeout(() => banner.remove(), 300);
+    }
+  },
+
+  async startUpdate() {
+    if (!this._pendingUpdate || !window.elbrother) return;
+
+    const btn = document.getElementById('update-start-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined spin">progress_activity</span>Descargando...';
+    }
+
+    // Mostrar barra de progreso
+    const progressWrap = document.getElementById('update-progress-wrap');
+    if (progressWrap) progressWrap.classList.remove('hidden');
+
+    // Ocultar botón "Después"
+    const dismissBtn = btn?.previousElementSibling;
+    if (dismissBtn) dismissBtn.classList.add('hidden');
+
+    try {
+      const success = await window.elbrother.downloadUpdates(this._pendingUpdate.updateInfo);
+      if (success) {
+        if (btn) btn.innerHTML = '<span class="material-symbols-outlined">restart_alt</span>Reiniciando...';
+        Toast.success('Actualización descargada. Reiniciando...');
+        setTimeout(async () => {
+          await window.elbrother.applyUpdates(this._pendingUpdate.updateInfo);
+        }, 1500);
+      } else {
+        Toast.error('Error al descargar la actualización');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined">download</span>Reintentar';
+        }
+      }
+    } catch (e) {
+      Toast.error('Error: ' + e.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">download</span>Reintentar';
+      }
+    }
+  },
+
+  updateDownloadProgress(progress) {
+    const bar = document.getElementById('update-progress-bar');
+    const text = document.getElementById('update-progress-text');
+    if (bar) bar.style.width = `${progress}%`;
+    if (text) text.textContent = `${progress}%`;
+  },
+
+  // ═══════════════════════════════════════════
 
   showLogin() {
     document.getElementById('login-screen').classList.remove('hidden');

@@ -1,6 +1,10 @@
-
 # Script de Publicación Manual para Elbrother POS
 $ErrorActionPreference = "Stop"
+
+$version = (Get-Content package.json | ConvertFrom-Json).version
+Write-Host ""
+Write-Host "  PUBLICAR ELBROTHER POS v$version" -ForegroundColor Cyan
+Write-Host ""
 
 Write-Host "--- 1. Limpiando carpetas anteriores ---" -ForegroundColor Cyan
 if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
@@ -19,12 +23,12 @@ if (-not (Test-Path $vpkPath)) {
     dotnet tool install -g vpk
 }
 
-$version = (Get-Content package.json | ConvertFrom-Json).version
 & $vpkPath pack -u elbrother -v $version -p dist\win-unpacked -e "Elbrother POS.exe"
 
 Write-Host "--- 5. Subiendo a GitHub Releases ---" -ForegroundColor Cyan
-gh release create "v$version" .\Releases\* --title "Versión $version" --notes "Actualización de seguridad y base de datos (Publicación Local)"
+gh release create "v$version" .\Releases\* --title "Versión $version" --notes "Actualización Elbrother POS v$version"
 
-Write-Host "--- ¡PROCESO COMPLETADO! ---" -ForegroundColor Green
-Write-Host "Tus clientes ya pueden descargar la actualización."
+Write-Host ""
+Write-Host "--- PROCESO COMPLETADO ---" -ForegroundColor Green
+Write-Host "El cliente recibirá la actualización automáticamente al iniciar la app."
 pause
