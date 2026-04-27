@@ -5,16 +5,15 @@ window.ClientsPage = {
       const rate = Store.get('bcvRate') || 483.87;
       return `<div class="page-header"><h1 class="page-title">Clientes</h1><div class="page-actions"><button class="btn btn-primary" onclick="ClientsPage.openAdd()"><span class="material-symbols-outlined">person_add</span>Nuevo Cliente</button></div></div>
       <div class="pos-search" style="margin-bottom:16px"><span class="material-symbols-outlined">search</span><input type="text" placeholder="Buscar por nombre o cédula..." oninput="ClientsPage.search(this.value)"></div>
-      <div class="table-container"><table><thead><tr><th>Nombre</th><th>Cédula</th><th>Teléfono</th><th>Deuda Bs</th><th>Deuda USD</th><th>Límite</th><th>Acciones</th></tr></thead>
+      <div class="table-container"><table><thead><tr><th>Nombre</th><th>Cédula</th><th>Teléfono</th><th>Deuda Bs</th><th>Deuda USD</th><th>Acciones</th></tr></thead>
       <tbody id="clients-tbody">${clients.map(c=>`<tr>
         <td style="font-weight:600">${escapeHTML(c.name)}</td>
         <td style="font-family:var(--font-mono)">${escapeHTML(c.cedula)||'—'}</td>
         <td>${escapeHTML(c.phone)||'—'}</td>
         <td style="font-family:var(--font-mono);color:${c.total_debt>0?'var(--error)':'var(--success)'};font-weight:700">Bs. ${((c.total_debt||0)*rate).toFixed(2)}</td>
         <td style="font-family:var(--font-mono);color:var(--outline)">$${(c.total_debt||0).toFixed(2)}</td>
-        <td style="font-family:var(--font-mono)">$${(c.credit_limit||0).toFixed(2)}</td>
         <td style="display:flex;gap:4px"><button class="btn btn-sm btn-ghost" onclick="ClientsPage.viewDetail(${c.id})" title="Ver"><span class="material-symbols-outlined" style="font-size:18px">visibility</span></button><button class="btn btn-sm btn-ghost" onclick="ClientsPage.openEdit(${c.id})" title="Editar"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button><button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="ClientsPage.deleteClient(${c.id},'${escapeHTML(c.name).replace(/'/g,"\\&#39;")}')" title="Eliminar"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td>
-      </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--outline)">No hay clientes registrados</td></tr>'}</tbody></table></div>`;
+      </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--outline)">No hay clientes registrados</td></tr>'}</tbody></table></div>`;
     } catch(e) { return `<div class="empty-state"><span class="material-symbols-outlined">error</span><p>${e.message}</p></div>`; }
   },
   async search(term) {
@@ -28,9 +27,8 @@ window.ClientsPage = {
       <td>${escapeHTML(c.phone)||'—'}</td>
       <td style="font-family:var(--font-mono);color:${c.total_debt>0?'var(--error)':'var(--success)'};font-weight:700">Bs. ${((c.total_debt||0)*rate).toFixed(2)}</td>
       <td style="font-family:var(--font-mono);color:var(--outline)">$${(c.total_debt||0).toFixed(2)}</td>
-      <td style="font-family:var(--font-mono)">$${(c.credit_limit||0).toFixed(2)}</td>
       <td style="display:flex;gap:4px"><button class="btn btn-sm btn-ghost" onclick="ClientsPage.viewDetail(${c.id})"><span class="material-symbols-outlined" style="font-size:18px">visibility</span></button><button class="btn btn-sm btn-ghost" onclick="ClientsPage.openEdit(${c.id})"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button><button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="ClientsPage.deleteClient(${c.id},'${escapeHTML(c.name).replace(/'/g,"\\&#39;")}')"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td>
-    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--outline)">Sin resultados</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--outline)">Sin resultados</td></tr>';
   },
   openAdd() {
     document.getElementById('modal-body').innerHTML = `
@@ -38,7 +36,6 @@ window.ClientsPage = {
       <form onsubmit="ClientsPage.save(event)">
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre</label><input class="form-input" id="c-name" required></div>
         <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="c-cedula" placeholder="V-12345678"></div><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="c-phone" placeholder="0414-1234567"></div></div>
-        <div class="form-group" style="margin-bottom:12px"><label class="form-label">Límite de Crédito (USD)</label><input class="form-input" type="number" step="0.01" id="c-limit" value="50"></div>
         <div class="modal-actions"><button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
       </form>`;
     document.getElementById('modal-overlay').classList.remove('hidden');
@@ -50,7 +47,6 @@ window.ClientsPage = {
       <form onsubmit="ClientsPage.update(event,${id})">
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre</label><input class="form-input" id="c-name" value="${c.name}" required></div>
         <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="c-cedula" value="${c.cedula||''}"></div><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="c-phone" value="${c.phone||''}"></div></div>
-        <div class="form-group" style="margin-bottom:12px"><label class="form-label">Límite de Crédito (USD)</label><input class="form-input" type="number" step="0.01" id="c-limit" value="${c.credit_limit}"></div>
         <div class="modal-actions"><button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancelar</button><button type="submit" class="btn btn-primary">Actualizar</button></div>
       </form>`;
     document.getElementById('modal-overlay').classList.remove('hidden');
@@ -58,14 +54,14 @@ window.ClientsPage = {
   async save(e) {
     e.preventDefault();
     try {
-      await API.post('/api/clients', { name:document.getElementById('c-name').value, cedula:document.getElementById('c-cedula').value, phone:document.getElementById('c-phone').value, credit_limit:parseFloat(document.getElementById('c-limit').value) });
+      await API.post('/api/clients', { name:document.getElementById('c-name').value, cedula:document.getElementById('c-cedula').value, phone:document.getElementById('c-phone').value });
       App.closeModal(); Toast.success('Cliente creado'); App.navigate('clients');
     } catch(e) { Toast.error(e.message); }
   },
   async update(e, id) {
     e.preventDefault();
     try {
-      await API.put(`/api/clients/${id}`, { name:document.getElementById('c-name').value, cedula:document.getElementById('c-cedula').value, phone:document.getElementById('c-phone').value, credit_limit:parseFloat(document.getElementById('c-limit').value) });
+      await API.put(`/api/clients/${id}`, { name:document.getElementById('c-name').value, cedula:document.getElementById('c-cedula').value, phone:document.getElementById('c-phone').value });
       App.closeModal(); Toast.success('Cliente actualizado'); App.navigate('clients');
     } catch(e) { Toast.error(e.message); }
   },
@@ -96,16 +92,11 @@ window.ClientsPage = {
           </button>` : ''}
         </div>
         
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px">
           <div class="card" style="border-top: 3px solid ${c.total_debt>0?'var(--error)':'var(--success)'}">
             <div class="kpi-label">Deuda Actual</div>
             <div style="font-family:var(--font-mono);font-size:24px;color:${c.total_debt>0?'var(--error)':'var(--success)'};font-weight:700">Bs. ${((c.total_debt||0)*rate).toFixed(2)}</div>
             <div style="color:var(--outline);font-size:12px">$${(c.total_debt||0).toFixed(2)}</div>
-          </div>
-          <div class="card">
-            <div class="kpi-label">Límite Crédito</div>
-            <div style="font-family:var(--font-mono);font-size:24px;font-weight:700">$${c.credit_limit.toFixed(2)}</div>
-            <div style="color:var(--outline);font-size:12px">Disponible: $${(c.credit_limit - c.total_debt).toFixed(2)}</div>
           </div>
         </div>
 
