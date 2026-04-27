@@ -1,6 +1,6 @@
-# 🔵 ELBROTHER POS v2.5.17
+# 🔵 ELBROTHER POS v2.5.18
 
-![Version](https://img.shields.io/badge/version-2.5.17-blue)
+![Version](https://img.shields.io/badge/version-2.5.18-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -255,6 +255,7 @@ El script ejecuta:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 2.5.18 | 2026-04-27 | Optimización de UI: eliminación de logo redundante en la barra lateral |
 | 2.5.17 | 2026-04-27 | Integración de nueva identidad visual (Icono de instalador, Logo en Login y Sidebar) |
 | 2.5.16 | 2026-04-27 | Corrección de accesos directos duplicados tras actualización |
 | 2.5.15 | 2026-04-27 | Eliminación de la opción de Mantenimiento Crítico en configuración |
