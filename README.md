@@ -255,6 +255,7 @@ El script ejecuta:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 2.5.13 | 2026-04-26 | Corrección de módulo nativo de SQLite al inicializar aplicación |
 | 2.5.12 | 2026-04-26 | Corrección de redondeo de precios y traducción de métodos de pago |
 | 2.5.11 | 2026-04-26 | Selector de cliente obligatorio para ventas a crédito (Fiado) en el POS |
 | 2.5.10 | 2026-04-26 | Sistema de actualización híbrido interno (Velopack + GitHub API) |

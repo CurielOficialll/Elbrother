@@ -1,6 +1,6 @@
 {
   "name": "elbrother-pos",
-  "version": "2.5.12",
+  "version": "2.5.13",
   "description": "Sistema Elbrother POS - Inventario y Punto de Venta Local",
   "main": "main.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "server": "node server.js",
     "dev": "electron .",
     "build:win": "electron-builder --win",
-    "build:portable": "electron-builder --win portable"
+    "build:portable": "electron-builder --win portable",
+    "postinstall": "electron-builder install-app-deps"
   },
   "build": {
     "appId": "com.curieloficialll.elbrother",
