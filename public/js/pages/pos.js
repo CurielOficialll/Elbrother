@@ -24,6 +24,10 @@ window.POSPage = {
       </div>
     </div>`;
   },
+  afterRender() {
+    const searchInput = document.getElementById('pos-search');
+    if (searchInput) searchInput.focus();
+  },
   renderProducts(products) {
     if(!products.length) return '<div class="empty-state"><span class="material-symbols-outlined">inventory_2</span><p>No se encontraron productos</p></div>';
     const rate = Store.get('bcvRate') || 483.87;
@@ -85,11 +89,24 @@ window.POSPage = {
     if(Store.addToCart(product)) { Sounds.play('scan'); } else { Toast.error('Stock insuficiente'); Sounds.play('error'); }
   },
   async search(term) {
-    if(!term) { document.getElementById('product-grid').innerHTML = this.renderProducts(this.selectedCategory ? this.products.filter(p=>p.category_id===this.selectedCategory) : this.products); return; }
-    try {
-      const results = await API.get(`/api/products/search/${encodeURIComponent(term)}`);
-      document.getElementById('product-grid').innerHTML = this.renderProducts(results);
-    } catch(e) {}
+    const grid = document.getElementById('product-grid');
+    if(!grid) return;
+    
+    if(!term) { 
+      grid.innerHTML = this.renderProducts(this.selectedCategory ? this.products.filter(p=>p.category_id===this.selectedCategory) : this.products); 
+      return; 
+    }
+    
+    const words = term.toLowerCase().split(' ').filter(w => w.length > 0);
+    const results = this.products.filter(p => {
+      const name = (p.name || '').toLowerCase();
+      const code = (p.code || '').toLowerCase();
+      // Fuzzy match: all words in search term must be present in name or code
+      return words.every(word => name.includes(word) || code.includes(word));
+    });
+    
+    grid.innerHTML = this.renderProducts(results);
+    if (results.length === 0) Sounds.play('error');
   },
   filterCategory(catId, el) {
     this.selectedCategory = catId;

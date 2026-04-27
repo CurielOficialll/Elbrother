@@ -1,8 +1,18 @@
 window.Store = {
-  _state: { user: null, bcvRate: 36.5, cart: [], currentPage: 'dashboard' },
+  _state: { 
+    user: null, 
+    bcvRate: 36.5, 
+    cart: [], 
+    currentPage: 'dashboard',
+    enableSounds: localStorage.getItem('enableSounds') !== 'false'
+  },
   _listeners: {},
   get(key) { return this._state[key]; },
-  set(key, value) { this._state[key] = value; (this._listeners[key]||[]).forEach(fn => fn(value)); },
+  set(key, value) { 
+    this._state[key] = value; 
+    if (key === 'enableSounds') localStorage.setItem('enableSounds', value);
+    (this._listeners[key]||[]).forEach(fn => fn(value)); 
+  },
   on(key, fn) { if(!this._listeners[key]) this._listeners[key]=[]; this._listeners[key].push(fn); },
   off(key, fn) { if(this._listeners[key]) this._listeners[key] = fn ? this._listeners[key].filter(f=>f!==fn) : []; },
   clearListeners(key) { if(key) this._listeners[key]=[]; else this._listeners={}; },

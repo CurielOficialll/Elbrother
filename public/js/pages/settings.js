@@ -22,10 +22,17 @@ window.SettingsPage = {
 
         <div class="card" style="margin-bottom:16px">
           <div class="card-header"><span class="card-title">Sistema</span></div>
-          <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre del Negocio</label><input class="form-input" id="cfg-name" value="${config.business_name||'Elbrother'}"></div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Nombre del Negocio</label>
+            <input class="form-input" id="cfg-name" value="${config.business_name||'Elbrother'}">
+          </div>
           <div class="form-row" style="margin-bottom:12px">
             <div class="form-group"><label class="form-label">IVA (%)</label><input class="form-input" type="number" step="0.01" id="cfg-tax" value="${(parseFloat(config.tax_rate||0.16)*100).toFixed(0)}"></div>
             <div class="form-group"><label class="form-label">Moneda</label><input class="form-input" id="cfg-currency" value="${config.currency||'USD'}"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px; display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="cfg-sounds" ${Store.get('enableSounds')?'checked':''} onchange="Store.set('enableSounds', this.checked)">
+            <label class="form-label" style="margin:0">Habilitar sonidos de confirmación</label>
           </div>
           <button class="btn btn-primary" onclick="SettingsPage.saveConfig()"><span class="material-symbols-outlined">save</span>Guardar</button>
         </div>

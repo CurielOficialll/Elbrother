@@ -74,6 +74,49 @@ window.App = {
 
     // Hash routing
     window.addEventListener('hashchange', () => this.route());
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      // F1: Nueva Venta / Ir a POS
+      if (e.key === 'F1') {
+        e.preventDefault();
+        if (Store.get('currentPage') === 'pos') {
+          Store.clearCart();
+          Toast.info('Nueva venta iniciada');
+        } else {
+          this.navigate('pos');
+        }
+      }
+      // F2: Buscar Producto (Focus en POS)
+      if (e.key === 'F2') {
+        e.preventDefault();
+        if (Store.get('currentPage') !== 'pos') {
+          this.navigate('pos').then(() => {
+            const input = document.getElementById('pos-search');
+            if (input) input.focus();
+          });
+        } else {
+          const input = document.getElementById('pos-search');
+          if (input) input.focus();
+        }
+      }
+      // Escape: Cerrar modales o Limpiar
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('modal-overlay');
+        if (modal && !modal.classList.contains('hidden')) {
+          this.closeModal({ target: modal });
+        } else if (Store.get('currentPage') === 'pos') {
+          const input = document.getElementById('pos-search');
+          if (input && input.value) {
+            input.value = '';
+            POSPage.search('');
+          } else {
+            Store.clearCart();
+            Toast.info('Carrito limpiado');
+          }
+        }
+      }
+    });
   },
 
   // ═══════════════════════════════════════════

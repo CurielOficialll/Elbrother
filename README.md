@@ -1,6 +1,6 @@
-# 🔵 ELBROTHER POS v2.5.21
+# 🔵 ELBROTHER POS v2.5.22
 
-![Version](https://img.shields.io/badge/version-2.5.21-blue)
+![Version](https://img.shields.io/badge/version-2.5.22-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -255,6 +255,7 @@ El script ejecuta:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 2.5.22 | 2026-04-27 | Atajos de teclado (F1, F2, Esc), Búsqueda Inteligente y Sonidos configurables |
 | 2.5.21 | 2026-04-27 | Nombre oficial 'Elbrother POS' en instalador y optimización de UI |
 | 2.5.20 | 2026-04-27 | Corrección definitiva de icono en Windows mediante electron-icon-builder |
 | 2.5.19 | 2026-04-27 | Intento de corrección de icono de aplicación en Windows |
