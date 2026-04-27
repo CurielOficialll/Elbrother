@@ -1,6 +1,6 @@
-# 🔵 ELBROTHER POS v2.5.11
+# 🔵 ELBROTHER POS v2.5.14
 
-![Version](https://img.shields.io/badge/version-2.5.11-blue)
+![Version](https://img.shields.io/badge/version-2.5.14-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -255,6 +255,7 @@ El script ejecuta:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 2.5.14 | 2026-04-26 | Optimización de dependencias nativas y configuración de compilación para SQLite |
 | 2.5.13 | 2026-04-26 | Corrección de módulo nativo de SQLite al inicializar aplicación |
 | 2.5.12 | 2026-04-26 | Corrección de redondeo de precios y traducción de métodos de pago |
 | 2.5.11 | 2026-04-26 | Selector de cliente obligatorio para ventas a crédito (Fiado) en el POS |

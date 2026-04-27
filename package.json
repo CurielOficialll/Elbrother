@@ -1,6 +1,6 @@
 {
   "name": "elbrother-pos",
-  "version": "2.5.13",
+  "version": "2.5.14",
   "description": "Sistema Elbrother POS - Inventario y Punto de Venta Local",
   "main": "main.js",
   "scripts": {
@@ -9,11 +9,12 @@
     "dev": "electron .",
     "build:win": "electron-builder --win",
     "build:portable": "electron-builder --win portable",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "cd node_modules/better-sqlite3 && npx prebuild-install --runtime electron --target 41.3.0"
   },
   "build": {
     "appId": "com.curieloficialll.elbrother",
     "productName": "Elbrother POS",
+    "npmRebuild": false,
     "directories": {
       "output": "dist"
     },
@@ -48,6 +49,7 @@
     "velopack": "^0.0.1589-ga2c5a97"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1"
   }
