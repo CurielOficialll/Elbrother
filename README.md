@@ -1,6 +1,6 @@
-# 🔵 ELBROTHER POS v2.5.19
+# 🔵 ELBROTHER POS v2.5.20
 
-![Version](https://img.shields.io/badge/version-2.5.19-blue)
+![Version](https://img.shields.io/badge/version-2.5.20-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -255,7 +255,8 @@ El script ejecuta:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
-| 2.5.19 | 2026-04-27 | Corrección de icono de aplicación en Windows (conversión a .ico) |
+| 2.5.20 | 2026-04-27 | Corrección definitiva de icono en Windows mediante electron-icon-builder |
+| 2.5.19 | 2026-04-27 | Intento de corrección de icono de aplicación en Windows |
 | 2.5.18 | 2026-04-27 | Optimización de UI: eliminación de logo redundante en la barra lateral |
 | 2.5.17 | 2026-04-27 | Integración de nueva identidad visual (Icono de instalador, Logo en Login y Sidebar) |
 | 2.5.16 | 2026-04-27 | Corrección de accesos directos duplicados tras actualización |
