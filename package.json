@@ -1,8 +1,9 @@
 {
   "name": "elbrother-pos",
-  "version": "2.5.20",
+  "version": "2.5.21",
   "description": "Sistema Elbrother POS - Inventario y Punto de Venta Local",
   "main": "main.js",
+  "packTitle": "Elbrother POS",
   "scripts": {
     "start": "electron .",
     "server": "node server.js",
