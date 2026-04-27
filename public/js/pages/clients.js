@@ -81,14 +81,74 @@ window.ClientsPage = {
     try {
       const c = await API.get(`/api/clients/${id}`);
       const rate = Store.get('bcvRate') || 483.87;
+      
+      // Combinar compras (credits) y abonos (payments) para la línea de tiempo
+      const timeline = [
+        ...c.credits.map(cr => ({ type: 'purchase', date: cr.created_at, amount: cr.amount, sale: cr.sale_number, id: cr.id })),
+        ...c.payments.map(p => ({ type: 'payment', date: p.created_at, amount: p.amount, sale: p.sale_number, id: p.id, method: p.payment_method }))
+      ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
       document.getElementById('modal-body').innerHTML = `
-        <div class="modal-title"><span class="material-symbols-outlined">person</span>${c.name}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-          <div class="card"><div class="kpi-label">Deuda Actual</div><div style="font-family:var(--font-mono);font-size:24px;color:${c.total_debt>0?'var(--error)':'var(--success)'}">Bs. ${((c.total_debt||0)*rate).toFixed(2)}</div><div style="color:var(--outline);font-size:12px">$${(c.total_debt||0).toFixed(2)}</div></div>
-          <div class="card"><div class="kpi-label">Límite Crédito</div><div style="font-family:var(--font-mono);font-size:24px">$${c.credit_limit.toFixed(2)}</div></div>
+        <div class="modal-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span><span class="material-symbols-outlined" style="vertical-align:middle;margin-right:8px">person</span>${c.name}</span>
+          ${c.phone ? `<button class="btn btn-sm btn-success" onclick="window.open('https://wa.me/${c.phone.replace(/[^0-9]/g,'')}?text=Hola%20${encodeURIComponent(c.name)},%20te%20saludamos%20de%20Elbrother%20POS.%20Te%20recordamos%20que%20posees%20un%20saldo%20pendiente%20de%20Bs.%20${((c.total_debt||0)*rate).toFixed(2)}%20($${(c.total_debt||0).toFixed(2)}).%20%C2%A1Feliz%20d%C3%ADa!')" title="Enviar cobro por WhatsApp">
+            <span class="material-symbols-outlined" style="font-size:18px">send</span> Cobro WA
+          </button>` : ''}
         </div>
-        <div style="margin-bottom:12px"><strong style="font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:var(--outline)">Cédula:</strong> ${c.cedula||'—'} | <strong style="font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:var(--outline)">Tel:</strong> ${c.phone||'—'}</div>
-        ${c.total_debt>0?`<div style="border-top:1px solid var(--outline-variant);padding-top:12px;margin-top:12px"><div class="form-label">Registrar Abono</div><div style="display:flex;gap:8px;margin-top:6px;align-items:center"><input class="form-input" type="number" step="0.01" id="abono-amount" placeholder="Monto en Bs." style="flex:1" oninput="document.getElementById('abono-usd-preview').textContent='≈ $'+(this.value/(${rate})).toFixed(2)+' USD'"><span id="abono-usd-preview" style="color:var(--outline);font-size:12px;min-width:90px">≈ $0.00 USD</span><button class="btn btn-success" onclick="ClientsPage.addPayment(${id},${rate})">Abonar</button></div></div>`:''}
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="card" style="border-top: 3px solid ${c.total_debt>0?'var(--error)':'var(--success)'}">
+            <div class="kpi-label">Deuda Actual</div>
+            <div style="font-family:var(--font-mono);font-size:24px;color:${c.total_debt>0?'var(--error)':'var(--success)'};font-weight:700">Bs. ${((c.total_debt||0)*rate).toFixed(2)}</div>
+            <div style="color:var(--outline);font-size:12px">$${(c.total_debt||0).toFixed(2)}</div>
+          </div>
+          <div class="card">
+            <div class="kpi-label">Límite Crédito</div>
+            <div style="font-family:var(--font-mono);font-size:24px;font-weight:700">$${c.credit_limit.toFixed(2)}</div>
+            <div style="color:var(--outline);font-size:12px">Disponible: $${(c.credit_limit - c.total_debt).toFixed(2)}</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;font-size:13px;background:var(--surface-container-low);padding:8px;border-radius:var(--radius)">
+          <span style="color:var(--outline)">Cédula:</span> <strong>${c.cedula||'—'}</strong> | 
+          <span style="color:var(--outline)">Tel:</span> <strong>${c.phone||'—'}</strong>
+        </div>
+
+        ${c.total_debt > 0 ? `
+        <div style="margin-bottom:20px;padding:12px;background:var(--surface-highest);border-radius:var(--radius);border:1px solid var(--outline-variant)">
+          <div class="form-label" style="margin-bottom:8px">Registrar Abono</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="form-input" type="number" step="0.01" id="abono-amount" placeholder="Monto en Bs." style="flex:1" oninput="document.getElementById('abono-usd-preview').textContent='≈ $'+(this.value/(${rate})).toFixed(2)">
+            <span id="abono-usd-preview" style="color:var(--outline);font-size:12px;min-width:70px">≈ $0.00</span>
+            <button class="btn btn-success" onclick="ClientsPage.addPayment(${id},${rate})">Abonar</button>
+          </div>
+        </div>` : ''}
+
+        <div class="timeline-container">
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em">Historial de Movimientos</div>
+          <div style="max-height:300px;overflow-y:auto;padding-right:4px">
+            ${timeline.map(item => `
+              <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--outline-variant);align-items:flex-start">
+                <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${item.type==='purchase'?'var(--error-container)':'var(--success-container)'};color:${item.type==='purchase'?'var(--error)':'var(--success)'}">
+                  <span class="material-symbols-outlined" style="font-size:20px">${item.type==='purchase'?'shopping_cart':'payments'}</span>
+                </div>
+                <div style="flex:1">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600;font-size:14px">${item.type==='purchase'?'Compra a Crédito':'Abono Recibido'}</span>
+                    <span style="font-family:var(--font-mono);font-weight:700;color:${item.type==='purchase'?'var(--error)':'var(--success)'}">
+                      ${item.type==='purchase'?'+':'-'} Bs. ${(item.amount*rate).toFixed(2)}
+                    </span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;font-size:12px;color:var(--outline)">
+                    <span>${item.sale ? `Venta #${item.sale}` : (item.method ? `Vía ${item.method}` : '')}</span>
+                    <span>${Format.timeAgo(item.date)}</span>
+                  </div>
+                </div>
+              </div>
+            `).join('') || '<p style="text-align:center;color:var(--outline);padding:20px">Sin movimientos registrados</p>'}
+          </div>
+        </div>
+
         <div class="modal-actions"><button class="btn btn-ghost" onclick="App.closeModal()">Cerrar</button></div>`;
       document.getElementById('modal-overlay').classList.remove('hidden');
     } catch(e) { Toast.error(e.message); }

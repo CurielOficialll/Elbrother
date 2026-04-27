@@ -25,6 +25,7 @@ router.get('/:id', authenticateToken, (req, res) => {
     client.credits = db.prepare(`SELECT cr.*, s.sale_number FROM credits cr LEFT JOIN sales s ON cr.sale_id = s.id WHERE cr.client_id = ? ORDER BY cr.created_at DESC`).all(client.id);
     client.total_debt = client.credits.filter(c => c.status === 'active').reduce((s, c) => s + c.balance, 0);
     client.recent_sales = db.prepare(`SELECT * FROM sales WHERE client_id = ? ORDER BY created_at DESC LIMIT 10`).all(client.id);
+    client.payments = db.prepare(`SELECT cp.*, s.sale_number FROM credit_payments cp JOIN credits cr ON cp.credit_id = cr.id LEFT JOIN sales s ON cr.sale_id = s.id WHERE cr.client_id = ? ORDER BY cp.created_at DESC`).all(client.id);
     res.json(client);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
