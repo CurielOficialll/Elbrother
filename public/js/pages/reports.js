@@ -290,7 +290,7 @@ window.ReportsPage = {
                 <td>${escapeHTML(s.user_name) || '—'}</td>
                 <td style="font-family:var(--font-mono);font-weight:700">Bs. ${(s.total * rate).toFixed(2)}</td>
                 <td style="font-family:var(--font-mono);color:var(--outline)">$${s.total.toFixed(2)}</td>
-                <td><span class="badge badge-info">${s.payment_method}</span></td>
+                <td><span class="badge badge-info">${Format.paymentMethod(s.payment_method)}</span></td>
                 <td>
                   ${s.status === 'completed' ? '<span class="badge badge-success">Completada</span>' : 
                     s.status === 'credit' ? '<span class="badge badge-warning">Crédito</span>' : 

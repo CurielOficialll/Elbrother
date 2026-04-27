@@ -28,7 +28,7 @@ window.POSPage = {
     if(!products.length) return '<div class="empty-state"><span class="material-symbols-outlined">inventory_2</span><p>No se encontraron productos</p></div>';
     const rate = Store.get('bcvRate') || 483.87;
     return products.map(p=>{
-      const bsPrice = p.sell_price * rate;
+      const bsPrice = Math.round(p.sell_price * rate * 100) / 100;
       return `<div class="product-card ${p.stock<=0?'out-of-stock':''}" onclick="POSPage.addToCart(${p.id})">
       <div class="product-name">${p.name}</div>
       <div class="product-price">Bs. ${bsPrice.toFixed(2)}</div>
@@ -44,8 +44,8 @@ window.POSPage = {
     const rate = Store.get('bcvRate') || 483.87;
     if(!cart.length) { el.innerHTML = '<div class="empty-state" style="padding:32px"><span class="material-symbols-outlined" style="font-size:48px">add_shopping_cart</span><p style="font-size:13px;margin-top:8px">Agrega productos</p></div>'; }
     else { el.innerHTML = cart.map(i=>{
-      const totalBs = i.price * i.quantity * rate;
-      const unitBs = i.price * rate;
+      const totalBs = Math.round(i.price * i.quantity * rate * 100) / 100;
+      const unitBs = Math.round(i.price * rate * 100) / 100;
       return `<div class="cart-item cart-item-left"><div class="cart-item-header"><span class="cart-item-name">${i.name}</span><span class="cart-item-total">Bs. ${totalBs.toFixed(2)}</span></div><div class="cart-item-meta"><div class="qty-control"><button onclick="Store.updateQty(${i.product_id},${i.quantity-1})">−</button><span>${i.quantity}</span><button onclick="Store.updateQty(${i.product_id},${i.quantity+1})">+</button></div><span>Bs. ${unitBs.toFixed(2)}/u</span><button onclick="Store.updateQty(${i.product_id},0)" style="margin-left:auto;color:var(--error)"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></div></div>`;}).join(''); }
     if(totals) totals.innerHTML = this.renderTotals();
   },
@@ -54,11 +54,11 @@ window.POSPage = {
     const rate = Store.get('bcvRate') || 483.87;
     const taxRate = (Store.get('taxRate') !== undefined && Store.get('taxRate') !== null) ? parseFloat(Store.get('taxRate')) : 0.16;
     const subtotalUsd = Store.getCartTotal();
-    const taxUsd = subtotalUsd * taxRate;
-    const totalUsd = subtotalUsd + taxUsd;
-    const subtotalBs = subtotalUsd * rate;
-    const taxBs = taxUsd * rate;
-    const totalBs = totalUsd * rate;
+    const taxUsd = Math.round(subtotalUsd * taxRate * 100) / 100;
+    const totalUsd = Math.round((subtotalUsd + taxUsd) * 100) / 100;
+    const subtotalBs = Math.round(subtotalUsd * rate * 100) / 100;
+    const taxBs = Math.round(taxUsd * rate * 100) / 100;
+    const totalBs = Math.round(totalUsd * rate * 100) / 100;
     return `<div class="cart-total-row"><span>Subtotal</span><span>Bs. ${subtotalBs.toFixed(2)}</span></div>
     <div class="cart-total-row"><span>IVA (${(taxRate * 100).toFixed(0)}%)</span><span>Bs. ${taxBs.toFixed(2)}</span></div>
     <div class="cart-total-row" style="border-top:1px solid var(--outline-variant);padding-top:8px;margin-top:4px"><span style="font-weight:700;color:var(--on-surface)">TOTAL</span><span class="cart-grand-total">Bs. ${totalBs.toFixed(2)}</span></div>
@@ -72,7 +72,7 @@ window.POSPage = {
     </div>
     ${POSPage._method === 'credit' ? `
     <div style="margin: 12px 0;">
-      <select class="input" style="width: 100%; padding: 8px;" onchange="POSPage.selectedClient = this.value">
+      <select class="form-input" onchange="POSPage.selectedClient = this.value">
         <option value="">-- Seleccionar Cliente --</option>
         ${POSPage.clients.map(c => `<option value="${c.id}" ${POSPage.selectedClient == c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
       </select>

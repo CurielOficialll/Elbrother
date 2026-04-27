@@ -31,4 +31,3 @@ gh release create "v$version" .\Releases\* --title "Versión $version" --notes "
 Write-Host ""
 Write-Host "--- PROCESO COMPLETADO ---" -ForegroundColor Green
 Write-Host "El cliente recibirá la actualización automáticamente al iniciar la app."
-pause

@@ -44,7 +44,7 @@ window.DashboardPage = {
           <div class="table-container">
             <table>
               <thead><tr><th>#</th><th>Total Bs</th><th>USD</th><th>Método</th><th>Hora</th></tr></thead>
-              <tbody>${d.recent_sales.map(s=>`<tr><td style="font-family:var(--font-mono);color:var(--primary)">${s.sale_number}</td><td style="font-family:var(--font-mono);font-weight:700">Bs. ${(s.total*rate).toFixed(2)}</td><td style="font-family:var(--font-mono);color:var(--outline)">$${s.total.toFixed(2)}</td><td><span class="badge badge-info">${s.payment_method}</span></td><td style="color:var(--outline)">${Format.timeAgo(s.created_at)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--outline);padding:24px">Sin ventas hoy</td></tr>'}</tbody>
+              <tbody>${d.recent_sales.map(s=>`<tr><td style="font-family:var(--font-mono);color:var(--primary)">${s.sale_number}</td><td style="font-family:var(--font-mono);font-weight:700">Bs. ${(s.total*rate).toFixed(2)}</td><td style="font-family:var(--font-mono);color:var(--outline)">$${s.total.toFixed(2)}</td><td><span class="badge badge-info">${Format.paymentMethod(s.payment_method)}</span></td><td style="color:var(--outline)">${Format.timeAgo(s.created_at)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--outline);padding:24px">Sin ventas hoy</td></tr>'}</tbody>
             </table>
           </div>
         </div>

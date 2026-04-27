@@ -64,7 +64,7 @@ window.PurchasesPage = {
                 <td style="font-family:var(--font-mono);font-weight:600">${escapeHTML(p.purchase_number)}</td>
                 <td>${Format.datetime(p.created_at)}</td>
                 <td>${escapeHTML(p.supplier_name) || '—'}</td>
-                <td style="text-transform:uppercase;font-size:12px">${p.payment_method}</td>
+                <td style="text-transform:uppercase;font-size:12px">${Format.paymentMethod(p.payment_method)}</td>
                 <td style="font-family:var(--font-mono);font-weight:700">$${p.total.toFixed(2)}</td>
                 <td><span class="badge ${p.status === 'completed' ? 'badge-success' : 'badge-warning'}">${p.status}</span></td>
                 <td>
@@ -102,7 +102,7 @@ window.PurchasesPage = {
           </div>
           <div>
             <div style="font-size:12px;color:var(--outline);text-transform:uppercase">Método de Pago</div>
-            <div style="text-transform:uppercase">${p.payment_method}</div>
+            <div style="text-transform:uppercase">${Format.paymentMethod(p.payment_method)}</div>
           </div>
           <div>
             <div style="font-size:12px;color:var(--outline);text-transform:uppercase">Total</div>

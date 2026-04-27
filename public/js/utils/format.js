@@ -31,5 +31,16 @@ window.Format = {
     if (s < 3600) return `Hace ${Math.floor(s/60)} min`;
     if (s < 86400) return `Hace ${Math.floor(s/3600)}h`;
     return window.Format.date(d);
+  },
+  paymentMethod(m) {
+    const methods = {
+      'cash': 'Efectivo',
+      'card': 'Tarjeta',
+      'mobile': 'P. Móvil',
+      'biopago': 'Biopago',
+      'credit': 'Fiado',
+      'transfer': 'Transferencia'
+    };
+    return methods[m] || (m ? m.toUpperCase() : '—');
   }
 };

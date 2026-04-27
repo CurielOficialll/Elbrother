@@ -99,7 +99,9 @@ window.InventoryPage = {
       const rate = Store.get('bcvRate') || 483.87;
       const costBs = parseFloat(document.getElementById('p-cost-bs').value) || 0;
       const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
-      await API.post('/api/products', { name: document.getElementById('p-name').value, barcode: document.getElementById('p-barcode')?.value, cost_price: costBs / rate, sell_price: priceBs / rate, stock: parseInt(document.getElementById('p-stock').value), min_stock: parseInt(document.getElementById('p-min').value) });
+      const costUsd = Math.round((costBs / rate) * 100) / 100;
+      const priceUsd = Math.round((priceBs / rate) * 100) / 100;
+      await API.post('/api/products', { name: document.getElementById('p-name').value, barcode: document.getElementById('p-barcode')?.value, cost_price: costUsd, sell_price: priceUsd, stock: parseInt(document.getElementById('p-stock').value), min_stock: parseInt(document.getElementById('p-min').value) });
       App.closeModal(); Toast.success('Producto creado'); App.navigate('inventory');
     } catch(e) { Toast.error(e.message); }
   },
@@ -109,7 +111,9 @@ window.InventoryPage = {
       const rate = Store.get('bcvRate') || 483.87;
       const costBs = parseFloat(document.getElementById('p-cost-bs').value) || 0;
       const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
-      await API.put(`/api/products/${id}`, { name: document.getElementById('p-name').value, cost_price: costBs / rate, sell_price: priceBs / rate, stock: parseInt(document.getElementById('p-stock').value), min_stock: parseInt(document.getElementById('p-min').value) });
+      const costUsd = Math.round((costBs / rate) * 100) / 100;
+      const priceUsd = Math.round((priceBs / rate) * 100) / 100;
+      await API.put(`/api/products/${id}`, { name: document.getElementById('p-name').value, cost_price: costUsd, sell_price: priceUsd, stock: parseInt(document.getElementById('p-stock').value), min_stock: parseInt(document.getElementById('p-min').value) });
       App.closeModal(); Toast.success('Producto actualizado'); App.navigate('inventory');
     } catch(e) { Toast.error(e.message); }
   },
