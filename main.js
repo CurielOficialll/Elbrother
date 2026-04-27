@@ -186,6 +186,24 @@ function runInitialMigration(targetPath) {
   }
 }
 
+// Limpiar accesos directos duplicados de versiones antiguas (electron-builder vs velopack)
+function cleanupOldShortcuts() {
+  try {
+    const desktopPath = path.join(require('os').homedir(), 'Desktop');
+    const oldShortcut = path.join(desktopPath, 'Elbrother POS.lnk');
+    const newShortcut = path.join(desktopPath, 'elbrother.lnk');
+
+    // Si ambos existen, el de "Elbrother POS" suele ser el del instalador NSIS antiguo
+    // Velopack usa el ID del paquete ("elbrother") para su acceso directo
+    if (fs.existsSync(oldShortcut) && fs.existsSync(newShortcut)) {
+      fs.unlinkSync(oldShortcut);
+      console.log('[CLEANUP] Acceso directo antiguo eliminado:', oldShortcut);
+    }
+  } catch (e) {
+    console.error('[CLEANUP] Error al limpiar accesos directos:', e.message);
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -354,6 +372,7 @@ app.whenReady().then(async () => {
   
   // Ejecutar migración si es necesario
   runInitialMigration(dbPath);
+  cleanupOldShortcuts();
 
   // Start the Express server
   try {
