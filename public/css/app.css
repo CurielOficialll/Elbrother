@@ -30,7 +30,9 @@ button { cursor: pointer; border: none; background: none; color: inherit; }
 /* ── App Layout ── */
 .app-header { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: var(--surface-lowest); border-bottom: 1px solid var(--outline-variant); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 100; }
 .header-left, .header-right { display: flex; align-items: center; gap: 12px; }
-.brand-logo { font-size: 20px; font-weight: 800; color: var(--primary); letter-spacing: 2px; font-style: italic; }
+.brand-logo { font-size: 20px; font-weight: 800; color: var(--primary); letter-spacing: 2px; font-style: italic; display: flex; align-items: center; gap: 8px; }
+.brand-logo-img { height: 32px; width: auto; object-fit: contain; border-radius: 6px; }
+.brand-logo-img--large { height: 64px; margin-bottom: 16px; }
 .header-badge { display: flex; align-items: center; gap: 6px; background: var(--surface-container); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--primary); }
 .header-badge--success { color: var(--success); }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px rgba(5,244,118,0.6); }

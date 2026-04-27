@@ -5,7 +5,8 @@ window.LoginPage = {
       <div class="login-glow"></div>
       <div class="login-card">
         <div style="text-align:center;margin-bottom:32px">
-          <h1 class="brand-logo" style="font-size:36px;margin-bottom:4px">ELBROTHER</h1>
+          <img src="/img/logo.png" class="brand-logo-img brand-logo-img--large" alt="Logo">
+          <h1 class="brand-logo" style="font-size:36px;margin-bottom:4px;justify-content:center">ELBROTHER</h1>
           <p style="color:var(--outline);font-size:13px;letter-spacing:0.1em;text-transform:uppercase">Sistema de Inventario v2.5</p>
         </div>
         <form id="login-form" onsubmit="window.LoginPage.submit(event)">

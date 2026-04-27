@@ -211,7 +211,7 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 700,
     title: "Elbrother POS",
-    icon: path.join(__dirname, 'public', 'favicon.ico'),
+    icon: path.join(__dirname, 'public', 'img', 'logo.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,

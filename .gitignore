@@ -6,6 +6,7 @@ data/backups/
 .env
 dist/
 build/
+!build/icon.png
 *.tmp
 package-lock.json
 Releases/
