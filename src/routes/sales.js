@@ -96,7 +96,7 @@ router.post('/:id/void', authenticateToken, (req, res) => {
       const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
       for (const item of items) {
         const p = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
-        const ns = (p?.stock || 0) + item.quantity;
+        const ns = Math.round(((p?.stock || 0) + item.quantity) * 1000) / 1000;
         db.prepare('UPDATE products SET stock = ? WHERE id = ?').run(ns, item.product_id);
         db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'in', ?, ?, ?, ?, ?)").run(item.product_id, item.quantity, p?.stock || 0, ns, `Anulación ${sale.sale_number}`, req.user.id);
       }
@@ -128,7 +128,7 @@ router.delete('/:id', authenticateToken, (req, res) => {
         for (const item of items) {
           const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
           if (product) {
-            const newStock = (product.stock || 0) + item.quantity;
+            const newStock = Math.round(((product.stock || 0) + item.quantity) * 1000) / 1000;
             db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?").run(newStock, item.product_id);
             // Registrar movimiento de stock de restauración
             db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'in', ?, ?, ?, ?, ?)").run(

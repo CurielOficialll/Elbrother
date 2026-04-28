@@ -103,7 +103,7 @@ router.post('/', authenticateToken, (req, res) => {
         // Get previous stock
         const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
         const prevStock = product ? product.stock : 0;
-        const newStock = prevStock + item.quantity;
+        const newStock = Math.round((prevStock + item.quantity) * 1000) / 1000;
 
         // Update product stock and cost
         updateProductStock.run(item.quantity, item.unit_cost, item.product_id);
@@ -210,7 +210,7 @@ router.delete('/:id', authenticateToken, (req, res) => {
       for (const item of items) {
         const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.product_id);
         if (product) {
-          const newStock = (product.stock || 0) - item.quantity;
+          const newStock = Math.round(((product.stock || 0) - item.quantity) * 1000) / 1000;
           db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?").run(newStock, item.product_id);
           // Registrar movimiento de stock de anulación
           db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'out', ?, ?, ?, ?, ?)").run(
