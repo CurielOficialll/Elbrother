@@ -33,11 +33,16 @@ window.POSPage = {
     const rate = Store.get('bcvRate') || 483.87;
     return products.map(p=>{
       const bsPrice = Math.round(p.sell_price * rate * 100) / 100;
+      const isWeight = p.sells_by_weight;
+      const unitTag = isWeight ? `/${p.unit || 'kg'}` : '';
+      const weightBadge = isWeight ? `<div class="product-weight-badge"><span class="material-symbols-outlined" style="font-size:14px">scale</span>${(p.unit || 'kg').toUpperCase()}</div>` : '';
+      const stockDisplay = isWeight ? `${parseFloat(p.stock).toFixed(2)} ${p.unit || 'kg'}` : `${Math.round(p.stock)} ${p.unit||''}`;
       return `<div class="product-card ${p.stock<=0?'out-of-stock':''}" onclick="POSPage.addToCart(${p.id})">
+      ${weightBadge}
       <div class="product-name">${p.name}</div>
-      <div class="product-price">Bs. ${bsPrice.toFixed(2)}</div>
-      <div style="font-family:var(--font-mono);font-size:12px;color:var(--outline)">$${p.sell_price.toFixed(2)}</div>
-      <div class="product-stock ${p.stock<=p.min_stock?'low':''}">Stock: ${p.stock} ${p.unit||''}</div>
+      <div class="product-price">Bs. ${bsPrice.toFixed(2)}${unitTag}</div>
+      <div style="font-family:var(--font-mono);font-size:12px;color:var(--outline)">$${p.sell_price.toFixed(2)}${unitTag}</div>
+      <div class="product-stock ${p.stock<=p.min_stock?'low':''}">Stock: ${stockDisplay}</div>
     </div>`;}).join('');
   },
   renderCart() {
@@ -50,7 +55,23 @@ window.POSPage = {
     else { el.innerHTML = cart.map(i=>{
       const totalBs = Math.round(i.price * i.quantity * rate * 100) / 100;
       const unitBs = Math.round(i.price * rate * 100) / 100;
-      return `<div class="cart-item cart-item-left"><div class="cart-item-header"><span class="cart-item-name">${i.name}</span><span class="cart-item-total">Bs. ${totalBs.toFixed(2)}</span></div><div class="cart-item-meta"><div class="qty-control"><button onclick="Store.updateQty(${i.product_id},${i.quantity-1})">−</button><span>${i.quantity}</span><button onclick="Store.updateQty(${i.product_id},${i.quantity+1})">+</button></div><span>Bs. ${unitBs.toFixed(2)}/u</span><button onclick="Store.updateQty(${i.product_id},0)" style="margin-left:auto;color:var(--error)"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></div></div>`;}).join(''); }
+      const isWeight = i.sells_by_weight;
+      const qtyDisplay = isWeight ? `${i.quantity.toFixed(3)} ${i.unit}` : i.quantity;
+      const priceLabel = isWeight ? `Bs. ${unitBs.toFixed(2)}/${i.unit}` : `Bs. ${unitBs.toFixed(2)}/u`;
+      
+      // Weight products: use direct input; Regular: use +/- buttons
+      const qtyControl = isWeight 
+        ? `<div class="qty-control" style="gap:4px">
+            <button onclick="Store.updateQty(${i.product_id},${Math.round((i.quantity-0.1)*1000)/1000})">−</button>
+            <input type="number" step="0.001" min="0.001" max="${i.stock}" value="${i.quantity}" 
+              style="width:70px;text-align:center;font-size:13px;padding:2px 4px;border:1px solid var(--outline-variant);border-radius:4px;background:var(--surface);color:var(--on-surface)"
+              onchange="Store.updateQty(${i.product_id}, parseFloat(this.value)||0)">
+            <button onclick="Store.updateQty(${i.product_id},${Math.round((i.quantity+0.1)*1000)/1000})">+</button>
+            <span style="font-size:11px;color:var(--outline);min-width:20px">${i.unit}</span>
+          </div>`
+        : `<div class="qty-control"><button onclick="Store.updateQty(${i.product_id},${i.quantity-1})">−</button><span>${i.quantity}</span><button onclick="Store.updateQty(${i.product_id},${i.quantity+1})">+</button></div>`;
+
+      return `<div class="cart-item cart-item-left"><div class="cart-item-header"><span class="cart-item-name">${isWeight ? '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;margin-right:2px">scale</span>' : ''}${i.name}</span><span class="cart-item-total">Bs. ${totalBs.toFixed(2)}</span></div><div class="cart-item-meta">${qtyControl}<span>${priceLabel}</span><button onclick="Store.updateQty(${i.product_id},0)" style="margin-left:auto;color:var(--error)"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></div></div>`;}).join(''); }
     if(totals) totals.innerHTML = this.renderTotals();
   },
   renderTotals() {
@@ -86,7 +107,89 @@ window.POSPage = {
   addToCart(id) {
     const product = this.products.find(p=>p.id===id);
     if(!product) return;
+    // If product sells by weight, open weight modal instead of adding directly
+    if (product.sells_by_weight) {
+      this.openWeightModal(product);
+      return;
+    }
     if(Store.addToCart(product)) { Sounds.play('scan'); } else { Toast.error('Stock insuficiente'); Sounds.play('error'); }
+  },
+  openWeightModal(product) {
+    const rate = Store.get('bcvRate') || 483.87;
+    const bsPrice = Math.round(product.sell_price * rate * 100) / 100;
+    const unit = product.unit || 'kg';
+    const stockDisplay = parseFloat(product.stock).toFixed(3);
+    
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-title"><span class="material-symbols-outlined">scale</span>Venta por Peso: ${product.name}</div>
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px">
+          <div>
+            <div style="font-size:11px;color:var(--outline);text-transform:uppercase">Precio por ${unit}</div>
+            <div style="font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--primary)">Bs. ${bsPrice.toFixed(2)}</div>
+            <div style="font-family:var(--font-mono);font-size:12px;color:var(--outline)">$${product.sell_price.toFixed(2)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--outline);text-transform:uppercase">Stock disponible</div>
+            <div style="font-family:var(--font-mono);font-size:20px;font-weight:700">${stockDisplay} ${unit}</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label" style="font-size:14px;font-weight:600">Peso (${unit})</label>
+        <input type="number" class="form-input" id="weight-input" step="0.001" min="0.001" max="${product.stock}" 
+          placeholder="Ej: 0.750" autofocus style="font-size:24px;text-align:center;padding:16px;font-family:var(--font-mono)"
+          oninput="POSPage.updateWeightPreview(${product.sell_price}, '${unit}')">
+      </div>
+      <div class="weight-quick-btns" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center">
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('weight-input').value='0.100';POSPage.updateWeightPreview(${product.sell_price},'${unit}')">100g</button>
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('weight-input').value='0.250';POSPage.updateWeightPreview(${product.sell_price},'${unit}')">250g</button>
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('weight-input').value='0.500';POSPage.updateWeightPreview(${product.sell_price},'${unit}')">500g</button>
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('weight-input').value='0.750';POSPage.updateWeightPreview(${product.sell_price},'${unit}')">750g</button>
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('weight-input').value='1.000';POSPage.updateWeightPreview(${product.sell_price},'${unit}')">1 kg</button>
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('weight-input').value='2.000';POSPage.updateWeightPreview(${product.sell_price},'${unit}')">2 kg</button>
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('weight-input').value='5.000';POSPage.updateWeightPreview(${product.sell_price},'${unit}')">5 kg</button>
+      </div>
+      <div id="weight-preview" style="background:var(--surface-variant);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--outline);text-transform:uppercase">Subtotal</div>
+        <div style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--primary)" id="weight-subtotal">Bs. 0.00</div>
+        <div style="font-family:var(--font-mono);font-size:14px;color:var(--outline)" id="weight-subtotal-usd">$0.00</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="weight-confirm-btn" onclick="POSPage.confirmWeight(${product.id})" disabled>
+          <span class="material-symbols-outlined">add_shopping_cart</span>Agregar al Carrito
+        </button>
+      </div>`;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    setTimeout(() => document.getElementById('weight-input')?.focus(), 100);
+  },
+  updateWeightPreview(priceUsd, unit) {
+    const weight = parseFloat(document.getElementById('weight-input')?.value) || 0;
+    const rate = Store.get('bcvRate') || 483.87;
+    const subtotalUsd = Math.round(priceUsd * weight * 100) / 100;
+    const subtotalBs = Math.round(subtotalUsd * rate * 100) / 100;
+    const el = document.getElementById('weight-subtotal');
+    const elUsd = document.getElementById('weight-subtotal-usd');
+    const btn = document.getElementById('weight-confirm-btn');
+    if (el) el.textContent = `Bs. ${subtotalBs.toFixed(2)}`;
+    if (elUsd) elUsd.textContent = `$${subtotalUsd.toFixed(2)}`;
+    if (btn) btn.disabled = weight <= 0;
+  },
+  confirmWeight(productId) {
+    const product = this.products.find(p => p.id === productId);
+    if (!product) return;
+    const weight = parseFloat(document.getElementById('weight-input')?.value) || 0;
+    if (weight <= 0) { Toast.error('Ingrese un peso válido'); return; }
+    if (weight > product.stock) { Toast.error('Peso excede el stock disponible'); Sounds.play('error'); return; }
+    if (Store.addToCart(product, weight)) {
+      Sounds.play('scan');
+      App.closeModal();
+      Toast.success(`${product.name}: ${weight.toFixed(3)} ${product.unit || 'kg'} agregado`);
+    } else {
+      Toast.error('Stock insuficiente');
+      Sounds.play('error');
+    }
   },
   async search(term) {
     const grid = document.getElementById('product-grid');

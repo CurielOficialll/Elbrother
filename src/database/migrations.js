@@ -25,15 +25,15 @@ const MIGRATIONS = [
   },
 
   // ──────────────────────────────────────────────
-  // Agregar futuras migraciones aquí:
+  // v2: Soporte para venta por peso (kg/g)
   // ──────────────────────────────────────────────
-  // {
-  //   version: 2,
-  //   description: 'Agregar campo X a tabla Y',
-  //   up(db) {
-  //     db.exec(`ALTER TABLE products ADD COLUMN new_field TEXT DEFAULT ''`);
-  //   }
-  // },
+  {
+    version: 2,
+    description: 'Agregar sells_by_weight a productos para venta por peso',
+    up(db) {
+      db.exec(`ALTER TABLE products ADD COLUMN sells_by_weight INTEGER DEFAULT 0`);
+    }
+  },
 ];
 
 /**

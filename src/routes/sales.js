@@ -24,10 +24,12 @@ router.post('/', authenticateToken, (req, res) => {
       for (const item of items) {
         const product = db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.product_id);
         if (!product) throw new Error(`Producto ${item.product_id} no encontrado`);
-        if (product.stock < item.quantity) throw new Error(`Stock insuficiente para ${product.name}`);
-        const itemTotal = product.sell_price * item.quantity;
+        const qty = parseFloat(item.quantity);
+        if (isNaN(qty) || qty <= 0) throw new Error(`Cantidad inválida para ${product.name}`);
+        if (product.stock < qty) throw new Error(`Stock insuficiente para ${product.name}`);
+        const itemTotal = Math.round(product.sell_price * qty * 100) / 100;
         subtotal += itemTotal;
-        saleItems.push({ ...item, product, unit_price: product.sell_price, cost_price: product.cost_price, total: itemTotal });
+        saleItems.push({ ...item, quantity: qty, product, unit_price: product.sell_price, cost_price: product.cost_price, total: itemTotal });
       }
       const tax = Math.round(subtotal * taxRate * 100) / 100;
       const total = Math.round((subtotal + tax) * 100) / 100;
@@ -39,7 +41,7 @@ router.post('/', authenticateToken, (req, res) => {
 
       for (const item of saleItems) {
         db.prepare('INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, cost_price, total) VALUES (?, ?, ?, ?, ?, ?)').run(saleId, item.product_id, item.quantity, item.unit_price, item.cost_price, item.total);
-        const newStock = item.product.stock - item.quantity;
+        const newStock = Math.round((item.product.stock - item.quantity) * 1000) / 1000;
         db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?").run(newStock, item.product_id);
         db.prepare("INSERT INTO stock_movements (product_id, type, quantity, previous_stock, new_stock, reference, user_id) VALUES (?, 'out', ?, ?, ?, ?, ?)").run(item.product_id, item.quantity, item.product.stock, newStock, `Venta ${saleNumber}`, req.user.id);
       }

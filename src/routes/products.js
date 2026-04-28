@@ -48,7 +48,7 @@ router.get('/search/:term', authenticateToken, (req, res) => {
     const db = getDb();
     const term = req.params.term;
     const products = db.prepare(`
-      SELECT id, barcode, name, sell_price, stock, unit, image_url, category_id
+      SELECT id, barcode, name, sell_price, stock, unit, sells_by_weight, image_url, category_id
       FROM products 
       WHERE active = 1 AND (name LIKE ? OR barcode = ?)
       ORDER BY name ASC
@@ -81,16 +81,18 @@ router.get('/:id', authenticateToken, (req, res) => {
 router.post('/', authenticateToken, (req, res) => {
   try {
     const db = getDb();
-    const { barcode, name, category_id, supplier_id, cost_price, sell_price, stock, min_stock, unit, image_url } = req.body;
+    const { barcode, name, category_id, supplier_id, cost_price, sell_price, stock, min_stock, unit, sells_by_weight, image_url } = req.body;
 
     if (!name || sell_price === undefined) {
       return res.status(400).json({ error: 'Nombre y precio son requeridos' });
     }
 
+    const finalUnit = sells_by_weight ? (unit || 'kg') : (unit || 'und');
+
     const result = db.prepare(`
-      INSERT INTO products (barcode, name, category_id, supplier_id, cost_price, sell_price, stock, min_stock, unit, image_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(barcode || null, name, category_id || null, supplier_id || null, cost_price || 0, sell_price, stock || 0, min_stock || 5, unit || 'und', image_url || null);
+      INSERT INTO products (barcode, name, category_id, supplier_id, cost_price, sell_price, stock, min_stock, unit, sells_by_weight, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(barcode || null, name, category_id || null, supplier_id || null, cost_price || 0, sell_price, stock || 0, min_stock || 5, finalUnit, sells_by_weight ? 1 : 0, image_url || null);
 
     // Log initial stock
     if (stock > 0) {
@@ -124,7 +126,7 @@ router.put('/:id', authenticateToken, (req, res) => {
     const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
 
-    const { barcode, name, category_id, supplier_id, cost_price, sell_price, stock, min_stock, unit, image_url, active } = req.body;
+    const { barcode, name, category_id, supplier_id, cost_price, sell_price, stock, min_stock, unit, sells_by_weight, image_url, active } = req.body;
 
     // Track price change
     if (sell_price !== undefined && sell_price !== product.sell_price) {
@@ -141,10 +143,13 @@ router.put('/:id', authenticateToken, (req, res) => {
       `).run(id, diff > 0 ? 'in' : 'adjust', Math.abs(diff), product.stock, stock, req.user.id);
     }
 
+    const sbw = sells_by_weight !== undefined ? (sells_by_weight ? 1 : 0) : product.sells_by_weight;
+    const finalUnit = sbw ? (unit || product.unit || 'kg') : (unit || product.unit || 'und');
+
     db.prepare(`
       UPDATE products SET 
         barcode = ?, name = ?, category_id = ?, supplier_id = ?, cost_price = ?,
-        sell_price = ?, stock = ?, min_stock = ?, unit = ?, image_url = ?, active = ?,
+        sell_price = ?, stock = ?, min_stock = ?, unit = ?, sells_by_weight = ?, image_url = ?, active = ?,
         updated_at = datetime('now')
       WHERE id = ?
     `).run(
@@ -156,7 +161,8 @@ router.put('/:id', authenticateToken, (req, res) => {
       sell_price !== undefined ? sell_price : product.sell_price,
       stock !== undefined ? stock : product.stock,
       min_stock !== undefined ? min_stock : product.min_stock,
-      unit || product.unit,
+      finalUnit,
+      sbw,
       image_url !== undefined ? image_url : product.image_url,
       active !== undefined ? active : product.active,
       id

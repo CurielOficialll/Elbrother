@@ -446,11 +446,14 @@ window.PurchasesPage = {
   },
 
   renderProductOption(p) {
+    const isWeight = p.sells_by_weight;
+    const stockDisplay = isWeight ? `${parseFloat(p.stock).toFixed(2)} ${p.unit||'kg'}` : `${Math.round(p.stock)} ${p.unit||'und'}`;
+    const weightIcon = isWeight ? '<span class="material-symbols-outlined" style="font-size:13px;color:#ff9800;vertical-align:middle">scale</span> ' : '';
     return `
       <div style="padding:8px;border:1px solid var(--outline-variant);border-radius:6px;display:flex;justify-content:space-between;align-items:center;background:var(--surface)">
         <div>
-          <div style="font-weight:600;font-size:13px">${escapeHTML(p.name)}</div>
-          <div style="font-size:11px;color:var(--outline)">Stock act: ${p.stock} | Costo act: $${(p.cost_price||0).toFixed(2)}</div>
+          <div style="font-weight:600;font-size:13px">${weightIcon}${escapeHTML(p.name)}</div>
+          <div style="font-size:11px;color:var(--outline)">Stock act: ${stockDisplay} | Costo act: $${(p.cost_price||0).toFixed(2)}</div>
         </div>
         <button class="btn btn-sm btn-ghost" onclick='PurchasesPage.addToPurchaseCart(${JSON.stringify(p).replace(/'/g, "&#39;")})'><span class="material-symbols-outlined">add</span></button>
       </div>
@@ -466,13 +469,15 @@ window.PurchasesPage = {
   addToPurchaseCart(product) {
     const existing = this.cart.find(i => i.product_id === product.id);
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity += product.sells_by_weight ? 0.5 : 1;
     } else {
       this.cart.push({
         product_id: product.id,
         name: product.name,
-        quantity: 1,
-        unit_cost: product.cost_price || 0
+        quantity: product.sells_by_weight ? 1 : 1,
+        unit_cost: product.cost_price || 0,
+        unit: product.unit || 'und',
+        sells_by_weight: product.sells_by_weight || 0
       });
     }
     this.renderPurchaseCart();
@@ -504,19 +509,22 @@ window.PurchasesPage = {
     container.innerHTML = this.cart.map((item, idx) => {
       const subtotal = item.quantity * item.unit_cost;
       total += subtotal;
+      const isWeight = item.sells_by_weight;
+      const unitLabel = item.unit || 'und';
+      const weightIcon = isWeight ? '<span class="material-symbols-outlined" style="font-size:13px;color:#ff9800;vertical-align:middle">scale</span> ' : '';
       return `
         <div style="background:var(--surface);border-radius:6px;padding:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-weight:600;font-size:13px">${escapeHTML(item.name)}</span>
+            <span style="font-weight:600;font-size:13px">${weightIcon}${escapeHTML(item.name)}</span>
             <button class="btn btn-sm btn-ghost" style="color:var(--error);padding:0" onclick="PurchasesPage.removeFromPurchaseCart(${idx})"><span class="material-symbols-outlined" style="font-size:16px">close</span></button>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <div style="flex:1">
-              <label style="font-size:10px;color:var(--outline)">Cantidad</label>
-              <input type="number" class="form-input" style="padding:4px;font-size:13px" min="1" value="${item.quantity}" onchange="PurchasesPage.updatePurchaseCartItem(${idx}, 'quantity', this.value)">
+              <label style="font-size:10px;color:var(--outline)">Cantidad${isWeight ? ` (${unitLabel})` : ''}</label>
+              <input type="number" class="form-input" style="padding:4px;font-size:13px" min="${isWeight?'0.001':'1'}" step="${isWeight?'0.001':'1'}" value="${item.quantity}" onchange="PurchasesPage.updatePurchaseCartItem(${idx}, 'quantity', this.value)">
             </div>
             <div style="flex:1">
-              <label style="font-size:10px;color:var(--outline)">Costo U. ($)</label>
+              <label style="font-size:10px;color:var(--outline)">Costo U. ($)${isWeight ? `/${unitLabel}` : ''}</label>
               <input type="number" class="form-input" style="padding:4px;font-size:13px" step="0.01" min="0" value="${item.unit_cost}" onchange="PurchasesPage.updatePurchaseCartItem(${idx}, 'unit_cost', this.value)">
             </div>
             <div style="flex:1;text-align:right">

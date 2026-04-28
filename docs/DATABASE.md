@@ -71,9 +71,10 @@ erDiagram
         int supplier_id FK
         real cost_price
         real sell_price
-        int stock
-        int min_stock
+        real stock
+        real min_stock
         text unit
+        int sells_by_weight
         int active
     }
     sales {
@@ -196,9 +197,10 @@ erDiagram
 | supplier_id | INTEGER FK | Proveedor |
 | cost_price | REAL | Precio de costo (USD) |
 | sell_price | REAL | Precio de venta (USD) |
-| stock | INTEGER | Unidades disponibles |
-| min_stock | INTEGER | Alerta de stock bajo (default: 5) |
-| unit | TEXT | Unidad de medida (default: `und`) |
+| stock | REAL | Cantidad disponible (decimal para productos por peso) |
+| min_stock | REAL | Alerta de stock bajo (default: 5) |
+| unit | TEXT | Unidad de medida: `und`, `kg`, `g` (default: `und`) |
+| sells_by_weight | INTEGER | 1=venta por peso, 0=venta por unidad (default: 0) |
 
 ### `sales` — Transacciones de venta
 | Campo | Tipo | Descripción |

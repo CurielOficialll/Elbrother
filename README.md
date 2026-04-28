@@ -1,6 +1,6 @@
-# 🔵 ELBROTHER POS v2.5.24
+# 🔵 ELBROTHER POS v2.5.25
 
-![Version](https://img.shields.io/badge/version-2.5.24-blue)
+![Version](https://img.shields.io/badge/version-2.5.25-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/license-Private-red)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -255,6 +255,7 @@ El script ejecuta:
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
+| 2.5.25 | 2026-04-28 | Venta por Peso (kg/g): modal de peso en POS, toggle por producto, stock decimal, compras con decimales |
 | 2.5.24 | 2026-04-27 | Eliminación de límite de crédito en sección de clientes |
 | 2.5.23 | 2026-04-27 | Historial detallado (Timeline) y recordatorios de cobro vía WhatsApp para clientes |
 | 2.5.22 | 2026-04-27 | Atajos de teclado (F1, F2, Esc), Búsqueda Inteligente y Sonidos configurables |

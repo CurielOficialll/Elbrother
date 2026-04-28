@@ -42,5 +42,21 @@ window.Format = {
       'transfer': 'Transferencia'
     };
     return methods[m] || (m ? m.toUpperCase() : '—');
+  },
+  // Format weight value with unit
+  weight(value, unit) {
+    const v = Number(value) || 0;
+    if (unit === 'g') return `${Math.round(v)} g`;
+    return `${v.toFixed(3)} ${unit || 'kg'}`;
+  },
+  // Format quantity: decimal for weight, integer for units
+  qty(value, sellsByWeight, unit) {
+    if (sellsByWeight) return this.weight(value, unit);
+    return `${Math.round(Number(value) || 0)}`;
+  },
+  // Unit label for display
+  unitLabel(unit) {
+    const labels = { 'und': 'Unidad', 'kg': 'Kilogramo', 'g': 'Gramo' };
+    return labels[unit] || unit || 'Unidad';
   }
 };

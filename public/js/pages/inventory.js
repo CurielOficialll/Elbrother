@@ -10,24 +10,32 @@ window.InventoryPage = {
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--outline);cursor:pointer"><input type="checkbox" id="inv-low-filter" onchange="InventoryPage.filter()"> Solo stock bajo</label>
       </div>
       <div class="table-container" id="inv-table">
-        <table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Costo Bs</th><th>Precio Bs</th><th>Ref USD</th><th>Stock</th><th>Acciones</th></tr></thead>
+        <table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Tipo</th><th>Costo Bs</th><th>Precio Bs</th><th>Ref USD</th><th>Stock</th><th>Acciones</th></tr></thead>
         <tbody id="inv-tbody">${this.renderRows(products, rate)}</tbody></table>
       </div>`;
     } catch(e) { return `<div class="empty-state"><span class="material-symbols-outlined">error</span><p>${e.message}</p></div>`; }
   },
   renderRows(products, rate) {
     if(!rate) rate = Store.get('bcvRate') || 483.87;
-    if(!products.length) return '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--outline)">No hay productos</td></tr>';
-    return products.map(p=>`<tr>
+    if(!products.length) return '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--outline)">No hay productos</td></tr>';
+    return products.map(p=>{
+      const isWeight = p.sells_by_weight;
+      const stockDisplay = isWeight ? `${parseFloat(p.stock).toFixed(2)} ${p.unit||'kg'}` : `${Math.round(p.stock)} ${p.unit||'und'}`;
+      const typeTag = isWeight 
+        ? `<span class="badge" style="background:rgba(255,152,0,0.15);color:#ff9800"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle">scale</span> ${(p.unit||'kg').toUpperCase()}</span>` 
+        : `<span class="badge badge-info">UND</span>`;
+      const priceLabel = isWeight ? `/${p.unit||'kg'}` : '';
+      return `<tr>
       <td style="font-family:var(--font-mono);color:var(--outline)">${p.barcode||'—'}</td>
       <td style="font-weight:600">${p.name}</td>
       <td><span class="badge badge-info">${p.category_name||'Sin categoría'}</span></td>
-      <td style="font-family:var(--font-mono)">Bs. ${(p.cost_price*rate).toFixed(2)}</td>
-      <td style="font-family:var(--font-mono);color:var(--primary);font-weight:700">Bs. ${(p.sell_price*rate).toFixed(2)}</td>
-      <td style="font-family:var(--font-mono);color:var(--outline)">$${p.sell_price.toFixed(2)}</td>
-      <td><span class="badge ${p.stock<=p.min_stock?'badge-error':'badge-success'}">${p.stock} ${p.unit||''}</span></td>
+      <td>${typeTag}</td>
+      <td style="font-family:var(--font-mono)">Bs. ${(p.cost_price*rate).toFixed(2)}${priceLabel}</td>
+      <td style="font-family:var(--font-mono);color:var(--primary);font-weight:700">Bs. ${(p.sell_price*rate).toFixed(2)}${priceLabel}</td>
+      <td style="font-family:var(--font-mono);color:var(--outline)">$${p.sell_price.toFixed(2)}${priceLabel}</td>
+      <td><span class="badge ${p.stock<=p.min_stock?'badge-error':'badge-success'}">${stockDisplay}</span></td>
       <td style="display:flex;gap:4px"><button class="btn btn-sm btn-ghost" onclick="InventoryPage.openEdit(${p.id})" title="Editar"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button><button class="btn btn-sm btn-ghost" onclick="InventoryPage.deleteProduct(${p.id},'${p.name.replace(/'/g,"\\&#39;")}')" title="Eliminar" style="color:var(--error)"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></td>
-    </tr>`).join('');
+    </tr>`}).join('');
   },
   async filter() {
     const search = document.getElementById('inv-search')?.value || '';
@@ -40,6 +48,47 @@ window.InventoryPage = {
     const products = await API.get(`/api/products?${params}`);
     document.getElementById('inv-tbody').innerHTML = this.renderRows(products);
   },
+  _renderWeightFields(isWeight, unit) {
+    const checked = isWeight ? 'checked' : '';
+    const display = isWeight ? '' : 'display:none;';
+    return `
+      <div style="margin-bottom:12px;padding:10px;border:1px solid var(--outline-variant);border-radius:var(--radius);background:rgba(255,152,0,0.03)">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600">
+          <input type="checkbox" id="p-sells-by-weight" ${checked} onchange="InventoryPage.toggleWeightFields()">
+          <span class="material-symbols-outlined" style="font-size:18px;color:#ff9800">scale</span>
+          Venta por Peso
+        </label>
+        <div id="weight-unit-selector" style="margin-top:8px;${display}">
+          <label class="form-label" style="font-size:12px">Unidad de medida</label>
+          <div style="display:flex;gap:8px">
+            <label style="display:flex;align-items:center;gap:4px;padding:6px 16px;border:1px solid var(--outline-variant);border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;${unit==='kg'?'border-color:var(--primary);background:rgba(0,224,255,0.08)':''}">
+              <input type="radio" name="p-unit" value="kg" ${unit==='kg'?'checked':''} style="display:none" onchange="InventoryPage.updateUnitStyle()"> KG
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;padding:6px 16px;border:1px solid var(--outline-variant);border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;${unit==='g'?'border-color:var(--primary);background:rgba(0,224,255,0.08)':''}">
+              <input type="radio" name="p-unit" value="g" ${unit==='g'?'checked':''} style="display:none" onchange="InventoryPage.updateUnitStyle()"> Gramos
+            </label>
+          </div>
+          <p style="font-size:11px;color:var(--outline);margin-top:6px"><span class="material-symbols-outlined" style="font-size:13px;vertical-align:middle">info</span> El precio y stock se manejarán en la unidad seleccionada</p>
+        </div>
+      </div>`;
+  },
+  toggleWeightFields() {
+    const checked = document.getElementById('p-sells-by-weight')?.checked;
+    const el = document.getElementById('weight-unit-selector');
+    if (el) el.style.display = checked ? '' : 'none';
+    // Update stock input step
+    const stockInput = document.getElementById('p-stock');
+    const minInput = document.getElementById('p-min');
+    if (stockInput) stockInput.step = checked ? '0.001' : '1';
+    if (minInput) minInput.step = checked ? '0.001' : '1';
+  },
+  updateUnitStyle() {
+    // Re-render would be complex, so we just let the radio work naturally
+  },
+  _getSelectedUnit() {
+    const radio = document.querySelector('input[name="p-unit"]:checked');
+    return radio ? radio.value : 'kg';
+  },
   openAdd() {
     const rate = Store.get('bcvRate') || 483.87;
     document.getElementById('modal-body').innerHTML = `
@@ -47,6 +96,7 @@ window.InventoryPage = {
       <form onsubmit="InventoryPage.save(event)">
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Código de Barras</label><input class="form-input" id="p-barcode" placeholder="Opcional"></div>
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre</label><input class="form-input" id="p-name" required></div>
+        ${this._renderWeightFields(false, 'kg')}
         <p style="color:var(--outline);font-size:11px;margin-bottom:8px">Ingrese los precios en Bolívares · Tasa BCV: ${rate.toFixed(2)} Bs/$</p>
         <div class="form-row" style="margin-bottom:4px">
           <div class="form-group"><label class="form-label">Costo (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-cost-bs" value="0" oninput="InventoryPage.convertPreview()"></div>
@@ -56,7 +106,7 @@ window.InventoryPage = {
           <span style="font-size:11px;color:var(--outline);font-family:var(--font-mono)">Ref. Costo: $0.00</span>
           <span style="font-size:11px;color:var(--primary);font-family:var(--font-mono);font-weight:600">Ref. Venta: $0.00</span>
         </div>
-        <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" type="number" id="p-stock" value="0"></div><div class="form-group"><label class="form-label">Stock Mínimo</label><input class="form-input" type="number" id="p-min" value="5"></div></div>
+        <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" type="number" id="p-stock" value="0" step="1"></div><div class="form-group"><label class="form-label">Stock Mínimo</label><input class="form-input" type="number" id="p-min" value="5" step="1"></div></div>
         <div class="modal-actions"><button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
       </form>`;
     document.getElementById('modal-overlay').classList.remove('hidden');
@@ -66,10 +116,12 @@ window.InventoryPage = {
     const rate = Store.get('bcvRate') || 483.87;
     const costBs = (p.cost_price * rate).toFixed(2);
     const priceBs = (p.sell_price * rate).toFixed(2);
+    const isWeight = p.sells_by_weight;
     document.getElementById('modal-body').innerHTML = `
       <div class="modal-title"><span class="material-symbols-outlined">edit</span>Editar: ${p.name}</div>
       <form onsubmit="InventoryPage.update(event,${id})">
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre</label><input class="form-input" id="p-name" value="${p.name}" required></div>
+        ${this._renderWeightFields(isWeight, p.unit || 'kg')}
         <p style="color:var(--outline);font-size:11px;margin-bottom:8px">Ingrese los precios en Bolívares · Tasa BCV: ${rate.toFixed(2)} Bs/$</p>
         <div class="form-row" style="margin-bottom:4px">
           <div class="form-group"><label class="form-label">Costo (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-cost-bs" value="${costBs}" oninput="InventoryPage.convertPreview()"></div>
@@ -79,7 +131,7 @@ window.InventoryPage = {
           <span style="font-size:11px;color:var(--outline);font-family:var(--font-mono)">Ref. Costo: $${p.cost_price.toFixed(2)}</span>
           <span style="font-size:11px;color:var(--primary);font-family:var(--font-mono);font-weight:600">Ref. Venta: $${p.sell_price.toFixed(2)}</span>
         </div>
-        <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" type="number" id="p-stock" value="${p.stock}"></div><div class="form-group"><label class="form-label">Stock Mínimo</label><input class="form-input" type="number" id="p-min" value="${p.min_stock}"></div></div>
+        <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" type="number" id="p-stock" value="${p.stock}" step="${isWeight?'0.001':'1'}"></div><div class="form-group"><label class="form-label">Stock Mínimo</label><input class="form-input" type="number" id="p-min" value="${p.min_stock}" step="${isWeight?'0.001':'1'}"></div></div>
         <div class="modal-actions"><button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancelar</button><button type="submit" class="btn btn-primary">Actualizar</button></div>
       </form>`;
     document.getElementById('modal-overlay').classList.remove('hidden');
@@ -101,7 +153,18 @@ window.InventoryPage = {
       const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
       const costUsd = Math.round((costBs / rate) * 100) / 100;
       const priceUsd = Math.round((priceBs / rate) * 100) / 100;
-      await API.post('/api/products', { name: document.getElementById('p-name').value, barcode: document.getElementById('p-barcode')?.value, cost_price: costUsd, sell_price: priceUsd, stock: parseInt(document.getElementById('p-stock').value), min_stock: parseInt(document.getElementById('p-min').value) });
+      const sellsByWeight = document.getElementById('p-sells-by-weight')?.checked ? 1 : 0;
+      const unit = sellsByWeight ? this._getSelectedUnit() : 'und';
+      await API.post('/api/products', {
+        name: document.getElementById('p-name').value,
+        barcode: document.getElementById('p-barcode')?.value,
+        cost_price: costUsd,
+        sell_price: priceUsd,
+        stock: parseFloat(document.getElementById('p-stock').value),
+        min_stock: parseFloat(document.getElementById('p-min').value),
+        sells_by_weight: sellsByWeight,
+        unit: unit
+      });
       App.closeModal(); Toast.success('Producto creado'); App.navigate('inventory');
     } catch(e) { Toast.error(e.message); }
   },
@@ -113,7 +176,17 @@ window.InventoryPage = {
       const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
       const costUsd = Math.round((costBs / rate) * 100) / 100;
       const priceUsd = Math.round((priceBs / rate) * 100) / 100;
-      await API.put(`/api/products/${id}`, { name: document.getElementById('p-name').value, cost_price: costUsd, sell_price: priceUsd, stock: parseInt(document.getElementById('p-stock').value), min_stock: parseInt(document.getElementById('p-min').value) });
+      const sellsByWeight = document.getElementById('p-sells-by-weight')?.checked ? 1 : 0;
+      const unit = sellsByWeight ? this._getSelectedUnit() : 'und';
+      await API.put(`/api/products/${id}`, {
+        name: document.getElementById('p-name').value,
+        cost_price: costUsd,
+        sell_price: priceUsd,
+        stock: parseFloat(document.getElementById('p-stock').value),
+        min_stock: parseFloat(document.getElementById('p-min').value),
+        sells_by_weight: sellsByWeight,
+        unit: unit
+      });
       App.closeModal(); Toast.success('Producto actualizado'); App.navigate('inventory');
     } catch(e) { Toast.error(e.message); }
   },
