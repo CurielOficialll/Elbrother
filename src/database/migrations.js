@@ -31,7 +31,13 @@ const MIGRATIONS = [
     version: 2,
     description: 'Agregar sells_by_weight a productos para venta por peso',
     up(db) {
-      db.exec(`ALTER TABLE products ADD COLUMN sells_by_weight INTEGER DEFAULT 0`);
+      const columns = db.pragma('table_info(products)');
+      const hasColumn = columns.some(col => col.name === 'sells_by_weight');
+      if (!hasColumn) {
+        db.exec(`ALTER TABLE products ADD COLUMN sells_by_weight INTEGER DEFAULT 0`);
+      } else {
+        console.log('[MIGRATIONS] La columna sells_by_weight ya existe en la tabla products, omitiendo ALTER TABLE');
+      }
     }
   },
 ];
