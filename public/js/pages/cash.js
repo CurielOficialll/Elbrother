@@ -2,7 +2,7 @@ window.CashPage = {
   async render() {
     try {
       const cash = await API.get('/api/cash/current');
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       if (cash.open) {
         const totals = {};
         (cash.totals || []).forEach(t => totals[t.type] = t.total);
@@ -38,7 +38,7 @@ window.CashPage = {
   async renderHistory() {
     try {
       const sessions = await API.get('/api/cash/history');
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       if(!sessions.length) return '';
       return `<div class="card section-gap"><div class="card-header"><span class="card-title">Historial de Sesiones</span></div>
       <div class="table-container"><table><thead><tr><th>Cajero</th><th>Apertura Bs</th><th>Cierre Bs</th><th>Diferencia</th><th>Fecha</th><th>Acciones</th></tr></thead>
@@ -48,14 +48,14 @@ window.CashPage = {
   async openCash() {
     try {
       const amountBs = parseFloat(document.getElementById('open-amount').value) || 0;
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       const amountUsd = Math.round((amountBs / rate) * 100) / 100;
       await API.post('/api/cash/open', { opening_amount: amountUsd });
       Toast.success(`Caja abierta: Bs. ${amountBs.toFixed(2)}`); Sounds.play('success'); App.navigate('cash');
     } catch(e) { Toast.error(e.message); }
   },
   openCloseModal() {
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     document.getElementById('modal-body').innerHTML = `
       <div class="modal-title"><span class="material-symbols-outlined">lock</span>Cerrar Caja</div>
       <div class="form-group" style="margin-bottom:8px"><label class="form-label">Monto de Cierre (Bs.)</label><input class="form-input" type="number" step="0.01" id="close-amount" placeholder="Ingrese el monto en caja" oninput="document.getElementById('close-usd-preview').textContent='≈ $'+(this.value/${rate}).toFixed(2)+' USD'"></div>
@@ -67,7 +67,7 @@ window.CashPage = {
   async closeCash() {
     const amountBs = parseFloat(document.getElementById('close-amount').value);
     if(isNaN(amountBs) || amountBs < 0) { Toast.error('Ingrese un monto válido'); return; }
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     const amountUsd = Math.round((amountBs / rate) * 100) / 100;
     const notes = document.getElementById('close-notes')?.value || '';
     try {

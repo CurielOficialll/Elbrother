@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('elbrother', {
   getDbPath: () => ipcRenderer.invoke('get-db-path'),
   selectDbPath: () => ipcRenderer.invoke('select-db-path'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  relaunchApp: () => ipcRenderer.invoke('relaunch-app'),
   isElectron: true,
 
   // --- Auto-Update (Velopack) ---

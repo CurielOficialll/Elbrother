@@ -64,17 +64,36 @@ async function start(config = {}) {
   async function updateBCV() {
     try {
       const rate = await fetchBCVRate();
-      if (rate) {
+      if (rate && rate > 0) {
         const { getDb } = require('./src/database/connection');
         const db = getDb();
         db.prepare('INSERT INTO bcv_rates (rate, source) VALUES (?, ?)').run(rate, 'bcv');
         db.prepare("INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('bcv_rate', ?, datetime('now'))").run(String(rate));
         io.emit('bcv:update', { rate });
-        console.log(`[BCV] Tasa: ${rate} Bs/$`);
+        console.log(`[BCV] Tasa actualizada: ${rate} Bs/$`);
+        return rate;
+      } else {
+        console.log('[BCV] No se obtuvo tasa válida de ninguna fuente');
+        return null;
       }
-    } catch (e) { console.log('[BCV] Usando caché'); }
+    } catch (e) {
+      console.log('[BCV] Error actualizando tasa:', e.message);
+      return null;
+    }
   }
-  updateBCV();
+
+  // Intentar obtener la tasa BCV al inicio — esperamos con timeout para tener la tasa lista
+  // antes de servir requests al frontend
+  try {
+    await Promise.race([
+      updateBCV(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+    ]);
+  } catch (e) {
+    console.log('[BCV] No se pudo obtener tasa al inicio (se usará la almacenada):', e.message);
+  }
+
+  // Actualizar cada hora
   setInterval(updateBCV, 60 * 60 * 1000);
 
   // Start

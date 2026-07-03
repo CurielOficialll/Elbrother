@@ -2,7 +2,7 @@ window.InventoryPage = {
   async render() {
     try {
       const [products, categories] = await Promise.all([API.get('/api/products'), API.get('/api/categories')]);
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       return `<div class="page-header"><h1 class="page-title">Inventario</h1><div class="page-actions"><button class="btn btn-primary" onclick="InventoryPage.openAdd()"><span class="material-symbols-outlined">add</span>Nuevo Producto</button></div></div>
       <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
         <div class="pos-search" style="flex:1;min-width:200px"><span class="material-symbols-outlined">search</span><input type="text" id="inv-search" placeholder="Buscar por nombre o código..." oninput="InventoryPage.filter()"></div>
@@ -16,7 +16,7 @@ window.InventoryPage = {
     } catch(e) { return `<div class="empty-state"><span class="material-symbols-outlined">error</span><p>${e.message}</p></div>`; }
   },
   renderRows(products, rate) {
-    if(!rate) rate = Store.get('bcvRate') || 483.87;
+    if(!rate) rate = Store.getRate();
     if(!products.length) return '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--outline)">No hay productos</td></tr>';
     return products.map(p=>{
       const isWeight = p.sells_by_weight;
@@ -90,7 +90,7 @@ window.InventoryPage = {
     return radio ? radio.value : 'kg';
   },
   openAdd() {
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     document.getElementById('modal-body').innerHTML = `
       <div class="modal-title"><span class="material-symbols-outlined">add_circle</span>Nuevo Producto</div>
       <form onsubmit="InventoryPage.save(event)">
@@ -113,7 +113,7 @@ window.InventoryPage = {
   },
   async openEdit(id) {
     const p = await API.get(`/api/products/${id}`);
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     const costBs = (p.cost_price * rate).toFixed(2);
     const priceBs = (p.sell_price * rate).toFixed(2);
     const isWeight = p.sells_by_weight;
@@ -137,7 +137,7 @@ window.InventoryPage = {
     document.getElementById('modal-overlay').classList.remove('hidden');
   },
   convertPreview() {
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     const costBs = parseFloat(document.getElementById('p-cost-bs')?.value) || 0;
     const priceBs = parseFloat(document.getElementById('p-price-bs')?.value) || 0;
     const costUsd = (costBs / rate).toFixed(2);
@@ -148,7 +148,7 @@ window.InventoryPage = {
   async save(e) {
     e.preventDefault();
     try {
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       const costBs = parseFloat(document.getElementById('p-cost-bs').value) || 0;
       const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
       const costUsd = Math.round((costBs / rate) * 100) / 100;
@@ -171,7 +171,7 @@ window.InventoryPage = {
   async update(e, id) {
     e.preventDefault();
     try {
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       const costBs = parseFloat(document.getElementById('p-cost-bs').value) || 0;
       const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
       const costUsd = Math.round((costBs / rate) * 100) / 100;

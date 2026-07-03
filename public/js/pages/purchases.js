@@ -195,7 +195,7 @@ window.PurchasesPage = {
   },
 
   openPayablePayment(id, balance, supplierName) {
-    const rate = Store.get('bcvRate') || 40;
+    const rate = Store.getRate();
     document.getElementById('modal-body').innerHTML = `
       <div class="modal-title">
         <span class="material-symbols-outlined">payments</span>

@@ -30,7 +30,7 @@ function seedDatabase() {
     ['business_name', 'Elbrother'],
     ['tax_rate', '0.16'],
     ['currency', 'USD'],
-    ['bcv_rate', '36.50'],
+    ['bcv_rate', '567.68'],
     ['low_stock_alert', '5'],
   ];
   for (const [key, value] of configs) {
@@ -38,7 +38,7 @@ function seedDatabase() {
   }
 
   // Initial BCV rate
-  db.prepare('INSERT INTO bcv_rates (rate, source) VALUES (?, ?)').run(36.50, 'seed');
+  db.prepare('INSERT INTO bcv_rates (rate, source) VALUES (?, ?)').run(567.68, 'seed');
 
   console.log('[SEED] ✓ Datos base de sistema insertados');
   console.log('[SEED]   → 2 usuarios (admin@elbrother.com / admin123)');

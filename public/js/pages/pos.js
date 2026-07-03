@@ -30,7 +30,7 @@ window.POSPage = {
   },
   renderProducts(products) {
     if(!products.length) return '<div class="empty-state"><span class="material-symbols-outlined">inventory_2</span><p>No se encontraron productos</p></div>';
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     return products.map(p=>{
       const bsPrice = Math.round(p.sell_price * rate * 100) / 100;
       const isWeight = p.sells_by_weight;
@@ -50,7 +50,7 @@ window.POSPage = {
     const el = document.getElementById('cart-items');
     const totals = document.getElementById('cart-totals');
     if(!el) return;
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     if(!cart.length) { el.innerHTML = '<div class="empty-state" style="padding:32px"><span class="material-symbols-outlined" style="font-size:48px">add_shopping_cart</span><p style="font-size:13px;margin-top:8px">Agrega productos</p></div>'; }
     else { el.innerHTML = cart.map(i=>{
       const totalBs = Math.round(i.price * i.quantity * rate * 100) / 100;
@@ -76,7 +76,7 @@ window.POSPage = {
   },
   renderTotals() {
     const cart = Store.get('cart');
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     const taxRate = (Store.get('taxRate') !== undefined && Store.get('taxRate') !== null) ? parseFloat(Store.get('taxRate')) : 0.16;
     const subtotalUsd = Store.getCartTotal();
     const taxUsd = Math.round(subtotalUsd * taxRate * 100) / 100;
@@ -115,7 +115,7 @@ window.POSPage = {
     if(Store.addToCart(product)) { Sounds.play('scan'); } else { Toast.error('Stock insuficiente'); Sounds.play('error'); }
   },
   openWeightModal(product) {
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     const bsPrice = Math.round(product.sell_price * rate * 100) / 100;
     const unit = product.unit || 'kg';
     const stockDisplay = parseFloat(product.stock).toFixed(3);
@@ -166,7 +166,7 @@ window.POSPage = {
   },
   updateWeightPreview(priceUsd, unit) {
     const weight = parseFloat(document.getElementById('weight-input')?.value) || 0;
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     const subtotalUsd = Math.round(priceUsd * weight * 100) / 100;
     const subtotalBs = Math.round(subtotalUsd * rate * 100) / 100;
     const el = document.getElementById('weight-subtotal');
@@ -235,7 +235,7 @@ window.POSPage = {
       this._method = null;
       this.selectedClient = null;
       Sounds.play('success');
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       Toast.success(`Venta ${result.sale_number}: Bs. ${(result.total * rate).toFixed(2)} ($${result.total.toFixed(2)})`);
       this.products = await API.get('/api/products');
       this.filterCategory(this.selectedCategory, document.querySelector('.chip.active'));

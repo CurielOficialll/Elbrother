@@ -39,7 +39,7 @@ window.SettingsPage = {
         <div class="card" style="margin-bottom:16px">
           <div class="card-header"><span class="card-title">Tasa BCV</span></div>
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-            <input type="number" step="0.0001" id="cfg-bcv" class="form-input" style="font-size:24px; width: 150px; font-weight: bold; color: var(--primary);" value="${config.bcv_rate||'36.50'}">
+            <input type="number" step="0.0001" id="cfg-bcv" class="form-input" style="font-size:24px; width: 150px; font-weight: bold; color: var(--primary);" value="${config.bcv_rate||''}">
             <span style="font-size:24px; font-weight:bold; color: var(--primary);">Bs/$</span>
           </div>
           <div style="display:flex; gap: 8px;">
@@ -250,7 +250,7 @@ window.SettingsPage = {
       const newPath = await window.elbrother.selectDbPath();
       if (newPath) {
         Toast.success('Ubicación guardada. Reiniciando...');
-        setTimeout(() => location.reload(), 1500);
+        setTimeout(() => window.elbrother.relaunchApp(), 1500);
       }
     } catch(e) {
       Toast.error(e.message);

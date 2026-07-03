@@ -2,7 +2,7 @@ window.DashboardPage = {
   async render() {
     try {
       const d = await API.get('/api/reports/dashboard');
-      const rate = d.bcv_rate || Store.get('bcvRate');
+      const rate = d.bcv_rate || Store.getRate();
       const todayBs = d.sales_today.total * rate;
       const weekBs = d.sales_week.total * rate;
       const monthBs = d.sales_month.total * rate;

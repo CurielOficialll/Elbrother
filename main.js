@@ -231,6 +231,10 @@ function createWindow() {
 // ═══════════════════════════════════════════
 ipcMain.handle('get-db-path', () => getSavedDbPath());
 ipcMain.handle('get-app-version', () => app.getVersion());
+ipcMain.handle('relaunch-app', () => {
+  app.relaunch();
+  app.quit();
+});
 
 ipcMain.handle('select-db-path', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {

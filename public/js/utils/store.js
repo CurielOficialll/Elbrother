@@ -1,7 +1,7 @@
 window.Store = {
   _state: { 
     user: null, 
-    bcvRate: 36.5, 
+    bcvRate: null, 
     cart: [], 
     currentPage: 'dashboard',
     enableSounds: localStorage.getItem('enableSounds') !== 'false'
@@ -49,5 +49,7 @@ window.Store = {
     this.set('cart', cart);
   },
   clearCart() { this.set('cart', []); },
-  getCartTotal() { return this._state.cart.reduce((s, i) => s + i.price * i.quantity, 0); }
+  getCartTotal() { return this._state.cart.reduce((s, i) => s + i.price * i.quantity, 0); },
+  // Helper: get current BCV rate safely (never returns 0 to avoid division issues)
+  getRate() { return this._state.bcvRate || 567.68; }
 };

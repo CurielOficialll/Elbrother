@@ -6,10 +6,20 @@ let db = null;
 let dbPath = '';
 
 async function initConnection() {
-  if (db) return db;
-
   const defaultDbDir = path.join(__dirname, '..', '..', 'data');
-  dbPath = process.env.DB_PATH || path.join(defaultDbDir, 'elbrother.db');
+  const requestedPath = process.env.DB_PATH || path.join(defaultDbDir, 'elbrother.db');
+
+  // If already connected to the same database, reuse the connection
+  if (db && dbPath === requestedPath) return db;
+
+  // If connected to a different database, close it first
+  if (db && dbPath !== requestedPath) {
+    console.log(`[DB] Cambiando base de datos de "${dbPath}" a "${requestedPath}"`);
+    try { db.close(); } catch (e) {}
+    db = null;
+  }
+
+  dbPath = requestedPath;
   
   const targetDir = path.dirname(dbPath);
   if (!fs.existsSync(targetDir)) {
@@ -25,6 +35,7 @@ async function initConnection() {
   db.pragma('foreign_keys = ON');
   db.pragma('temp_store = MEMORY');
 
+  console.log(`[DB] Conectado a: ${dbPath}`);
   return db;
 }
 
@@ -45,4 +56,4 @@ function closeDb() {
   }
 }
 
-module.exports = { initConnection, getDb, closeDb, saveDb };
+module.exports = { initConnection, getDb, closeDb, saveDb, getDbPath: () => dbPath };

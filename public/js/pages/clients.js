@@ -2,7 +2,7 @@ window.ClientsPage = {
   async render() {
     try {
       const clients = await API.get('/api/clients');
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       return `<div class="page-header"><h1 class="page-title">Clientes</h1><div class="page-actions"><button class="btn btn-primary" onclick="ClientsPage.openAdd()"><span class="material-symbols-outlined">person_add</span>Nuevo Cliente</button></div></div>
       <div class="pos-search" style="margin-bottom:16px"><span class="material-symbols-outlined">search</span><input type="text" placeholder="Buscar por nombre o cédula..." oninput="ClientsPage.search(this.value)"></div>
       <div class="table-container"><table><thead><tr><th>Nombre</th><th>Cédula</th><th>Teléfono</th><th>Deuda Bs</th><th>Deuda USD</th><th>Acciones</th></tr></thead>
@@ -18,7 +18,7 @@ window.ClientsPage = {
   },
   async search(term) {
     const clients = await API.get(`/api/clients?search=${encodeURIComponent(term)}`);
-    const rate = Store.get('bcvRate') || 483.87;
+    const rate = Store.getRate();
     const tbody = document.getElementById('clients-tbody');
     if(!tbody) return;
     tbody.innerHTML = clients.map(c=>`<tr>
@@ -76,7 +76,7 @@ window.ClientsPage = {
   async viewDetail(id) {
     try {
       const c = await API.get(`/api/clients/${id}`);
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       
       // Combinar compras (credits) y abonos (payments) para la línea de tiempo
       const timeline = [
@@ -147,7 +147,7 @@ window.ClientsPage = {
   async addPayment(id, rate) {
     const amountBs = parseFloat(document.getElementById('abono-amount').value);
     if(!amountBs || amountBs<=0) { Toast.error('Ingrese un monto válido en Bs.'); return; }
-    const amountUsd = Math.round((amountBs / (rate || Store.get('bcvRate') || 483.87)) * 100) / 100;
+    const amountUsd = Math.round((amountBs / (rate || Store.getRate())) * 100) / 100;
     try {
       await API.post(`/api/clients/${id}/payment`, { amount: amountUsd });
       Toast.success(`Abono registrado: Bs. ${amountBs.toFixed(2)} ($${amountUsd.toFixed(2)})`);

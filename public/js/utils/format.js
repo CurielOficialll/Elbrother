@@ -4,17 +4,17 @@ window.Format = {
   // USD conversion (divide by BCV rate)
   usd: (n) => `$${(Number(n)||0).toFixed(2)}`,
   // Convert USD amount to Bs
-  toBs: (usdAmount, rate) => (Number(usdAmount)||0) * (rate || Store.get('bcvRate') || 483.87),
+  toBs: (usdAmount, rate) => (Number(usdAmount)||0) * (rate || Store.getRate()),
   // Convert Bs amount to USD
-  toUsd: (bsAmount, rate) => (Number(bsAmount)||0) / (rate || Store.get('bcvRate') || 483.87),
+  toUsd: (bsAmount, rate) => (Number(bsAmount)||0) / (rate || Store.getRate()),
   // Format a product price (stored in USD) showing Bs primary + USD ref
   price: (usdPrice, rate) => {
-    const r = rate || Store.get('bcvRate') || 483.87;
+    const r = rate || Store.getRate();
     const bsVal = (Number(usdPrice)||0) * r;
     return `Bs. ${bsVal.toFixed(2)}`;
   },
   priceWithRef: (usdPrice, rate) => {
-    const r = rate || Store.get('bcvRate') || 483.87;
+    const r = rate || Store.getRate();
     const bsVal = (Number(usdPrice)||0) * r;
     return `Bs. ${bsVal.toFixed(2)} <span style="color:var(--outline);font-size:0.8em">($${(Number(usdPrice)||0).toFixed(2)})</span>`;
   },

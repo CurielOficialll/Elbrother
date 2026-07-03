@@ -1,8 +1,32 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../database/connection');
+const { getDb, getDbPath } = require('../database/connection');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { fetchBCVRate, getCurrentRate } = require('../services/bcv');
+
+// GET /api/system/health - No auth required
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// GET /api/system/db-info - Diagnostic info about current database
+router.get('/db-info', authenticateToken, (req, res) => {
+  try {
+    const db = getDb();
+    const dbFilePath = getDbPath();
+    const productCount = db.prepare('SELECT COUNT(*) as c FROM products WHERE active = 1').get();
+    const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
+    const categoryCount = db.prepare('SELECT COUNT(*) as c FROM categories').get();
+    const bcvRate = db.prepare("SELECT value FROM system_config WHERE key = 'bcv_rate'").get();
+    res.json({
+      dbPath: dbFilePath,
+      products: productCount?.c || 0,
+      users: userCount?.c || 0,
+      categories: categoryCount?.c || 0,
+      bcvRate: bcvRate?.value || 'not set'
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // GET /api/system/config
 router.get('/config', authenticateToken, (req, res) => {

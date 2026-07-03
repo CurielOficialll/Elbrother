@@ -1,7 +1,7 @@
 window.ReportsPage = {
   async render() {
     try {
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       const valuation = await API.get('/api/reports/valuation').catch(()=>({total_cost:0,total_sell:0,total_products:0,total_units:0}));
       
       return `
@@ -196,7 +196,7 @@ window.ReportsPage = {
         API.get(`/api/reports/top-products?startDate=${startDate}&endDate=${endDate}`)
       ]);
 
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
       
       container.innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:16px;margin-bottom:24px;">
@@ -261,7 +261,7 @@ window.ReportsPage = {
       const fromStart = `${from} 00:00:00`;
       
       const sales = await API.get(`/api/sales?from=${fromStart}&to=${toInclusive}&limit=500`);
-      const rate = Store.get('bcvRate') || 483.87;
+      const rate = Store.getRate();
 
       if (!sales || sales.length === 0) {
         container.innerHTML = '<p style="padding:24px;text-align:center;color:var(--outline)">No se encontraron movimientos en este rango de fechas</p>';

@@ -40,6 +40,41 @@ const MIGRATIONS = [
       }
     }
   },
+
+  // ──────────────────────────────────────────────
+  // v3: Actualizar tasa BCV obsoleta a la actual (567.68)
+  // ──────────────────────────────────────────────
+  {
+    version: 3,
+    description: 'Actualizar tasa BCV a la actual (567.68) si la existente es obsoleta o muy baja',
+    up(db) {
+      const config = db.prepare("SELECT value FROM system_config WHERE key = 'bcv_rate'").get();
+      const currentRate = config ? parseFloat(config.value) : 0;
+      if (currentRate < 500) {
+        db.prepare("INSERT OR REPLACE INTO system_config (key, value, updated_at) VALUES ('bcv_rate', '567.68', datetime('now'))").run();
+        db.prepare("INSERT INTO bcv_rates (rate, source) VALUES (567.68, 'migration')").run();
+        console.log(`[MIGRATIONS] Tasa BCV obsoleta (${currentRate}) actualizada a 567.68`);
+      }
+    }
+  },
+
+  // ──────────────────────────────────────────────
+  // v4: Forzar actualización de tasa BCV (567.68 es obsoleta, la actual es ~653+)
+  // ──────────────────────────────────────────────
+  {
+    version: 4,
+    description: 'Marcar tasa BCV para actualización automática (567.68 obsoleta)',
+    up(db) {
+      const config = db.prepare("SELECT value FROM system_config WHERE key = 'bcv_rate'").get();
+      const currentRate = config ? parseFloat(config.value) : 0;
+      // Si la tasa está estancada en el valor antiguo del seed/migración, marcar para refresh
+      if (currentRate > 0 && currentRate < 600) {
+        // No hardcodear una nueva tasa — dejar que el fetch automático la obtenga al iniciar
+        // Solo registrar que necesita actualización
+        console.log(`[MIGRATIONS] Tasa BCV ${currentRate} parece obsoleta, se actualizará automáticamente al iniciar`);
+      }
+    }
+  },
 ];
 
 /**

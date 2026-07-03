@@ -25,15 +25,36 @@ window.App = {
       this.showLogin();
     }
 
-    // Load config
+    // Load config and BCV rate
     try {
       const config = await API.get('/api/system/config');
       if (config) {
         Store.set('taxRate', config.tax_rate !== undefined && config.tax_rate !== null ? parseFloat(config.tax_rate) : 0.16);
-        if (config.bcv_rate) Store.set('bcvRate', parseFloat(config.bcv_rate));
+        if (config.bcv_rate) {
+          const rate = parseFloat(config.bcv_rate);
+          if (rate > 0) {
+            Store.set('bcvRate', rate);
+            const el = document.getElementById('bcv-rate-value');
+            if (el) el.textContent = rate.toFixed(2);
+          }
+        }
       }
     } catch (e) {
       console.error('Error loading config:', e);
+    }
+
+    // If bcvRate is still default/invalid, try fetching directly
+    if (!Store.get('bcvRate') || Store.get('bcvRate') <= 1) {
+      try {
+        const bcvData = await API.get('/api/system/bcv');
+        if (bcvData && bcvData.rate && bcvData.rate > 0) {
+          Store.set('bcvRate', bcvData.rate);
+          const el = document.getElementById('bcv-rate-value');
+          if (el) el.textContent = Number(bcvData.rate).toFixed(2);
+        }
+      } catch (e) {
+        console.error('Error loading BCV rate:', e);
+      }
     }
     
     // Version
