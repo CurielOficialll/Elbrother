@@ -53,11 +53,12 @@ window.POSPage = {
     const rate = Store.getRate();
     if(!cart.length) { el.innerHTML = '<div class="empty-state" style="padding:32px"><span class="material-symbols-outlined" style="font-size:48px">add_shopping_cart</span><p style="font-size:13px;margin-top:8px">Agrega productos</p></div>'; }
     else { el.innerHTML = cart.map(i=>{
+      const totalUsd = Math.round(i.price * i.quantity * 100) / 100;
       const totalBs = Math.round(i.price * i.quantity * rate * 100) / 100;
       const unitBs = Math.round(i.price * rate * 100) / 100;
       const isWeight = i.sells_by_weight;
       const qtyDisplay = isWeight ? `${i.quantity.toFixed(3)} ${i.unit}` : i.quantity;
-      const priceLabel = isWeight ? `Bs. ${unitBs.toFixed(2)}/${i.unit}` : `Bs. ${unitBs.toFixed(2)}/u`;
+      const priceLabel = isWeight ? `Bs. ${unitBs.toFixed(2)}/${i.unit} ($${i.price.toFixed(2)})` : `Bs. ${unitBs.toFixed(2)} ($${i.price.toFixed(2)})`;
       
       // Weight products: use direct input; Regular: use +/- buttons
       const qtyControl = isWeight 
@@ -71,7 +72,7 @@ window.POSPage = {
           </div>`
         : `<div class="qty-control"><button onclick="Store.updateQty(${i.product_id},${i.quantity-1})">−</button><span>${i.quantity}</span><button onclick="Store.updateQty(${i.product_id},${i.quantity+1})">+</button></div>`;
 
-      return `<div class="cart-item cart-item-left"><div class="cart-item-header"><span class="cart-item-name">${isWeight ? '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;margin-right:2px">scale</span>' : ''}${i.name}</span><span class="cart-item-total">Bs. ${totalBs.toFixed(2)}</span></div><div class="cart-item-meta">${qtyControl}<span>${priceLabel}</span><button onclick="Store.updateQty(${i.product_id},0)" style="margin-left:auto;color:var(--error)"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></div></div>`;}).join(''); }
+      return `<div class="cart-item cart-item-left"><div class="cart-item-header"><span class="cart-item-name">${isWeight ? '<span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;margin-right:2px">scale</span>' : ''}${i.name}</span><span class="cart-item-total">Bs. ${totalBs.toFixed(2)} <span style="font-size:11px;color:var(--outline);font-weight:400">($${totalUsd.toFixed(2)})</span></span></div><div class="cart-item-meta">${qtyControl}<span>${priceLabel}</span><button onclick="Store.updateQty(${i.product_id},0)" style="margin-left:auto;color:var(--error)"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button></div></div>`;}).join(''); }
     if(totals) totals.innerHTML = this.renderTotals();
   },
   renderTotals() {

@@ -97,15 +97,24 @@ window.InventoryPage = {
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Código de Barras</label><input class="form-input" id="p-barcode" placeholder="Opcional"></div>
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre</label><input class="form-input" id="p-name" required></div>
         ${this._renderWeightFields(false, 'kg')}
-        <p style="color:var(--outline);font-size:11px;margin-bottom:8px">Ingrese los precios en Bolívares · Tasa BCV: ${rate.toFixed(2)} Bs/$</p>
-        <div class="form-row" style="margin-bottom:4px">
-          <div class="form-group"><label class="form-label">Costo (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-cost-bs" value="0" oninput="InventoryPage.convertPreview()"></div>
-          <div class="form-group"><label class="form-label">Precio Venta (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-price-bs" required oninput="InventoryPage.convertPreview()"></div>
+        <p style="color:var(--outline);font-size:11px;margin-bottom:10px">Puedes colocar el precio en <strong>$ USD</strong> o en <strong>Bolívares (Bs.)</strong>. Se calculará automáticamente · Tasa BCV: <strong>${rate.toFixed(2)} Bs/$</strong></p>
+        
+        <div style="background:var(--surface-variant);padding:10px 12px;border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--outline-variant)">
+          <div style="font-weight:600;font-size:11px;color:var(--outline);margin-bottom:6px">PRECIO DE COSTO</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Costo ($ USD)</label><input class="form-input" type="number" step="0.01" id="p-cost-usd" value="0.00" oninput="InventoryPage.onCostUsdChange()"></div>
+            <div class="form-group"><label class="form-label">Costo (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-cost-bs" value="0.00" oninput="InventoryPage.onCostBsChange()"></div>
+          </div>
         </div>
-        <div id="usd-preview" style="display:flex;gap:16px;margin-bottom:12px;padding:6px 10px;background:rgba(0,200,255,0.05);border-radius:var(--radius);border:1px solid var(--outline-variant)">
-          <span style="font-size:11px;color:var(--outline);font-family:var(--font-mono)">Ref. Costo: $0.00</span>
-          <span style="font-size:11px;color:var(--primary);font-family:var(--font-mono);font-weight:600">Ref. Venta: $0.00</span>
+
+        <div style="background:rgba(0,224,255,0.03);padding:10px 12px;border-radius:var(--radius);margin-bottom:12px;border:1px solid rgba(0,224,255,0.2)">
+          <div style="font-weight:600;font-size:11px;color:var(--primary);margin-bottom:6px">PRECIO DE VENTA</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Precio Venta ($ USD)</label><input class="form-input" type="number" step="0.01" id="p-price-usd" placeholder="0.00" required oninput="InventoryPage.onPriceUsdChange()"></div>
+            <div class="form-group"><label class="form-label">Precio Venta (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-price-bs" placeholder="0.00" required oninput="InventoryPage.onPriceBsChange()"></div>
+          </div>
         </div>
+
         <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" type="number" id="p-stock" value="0" step="1"></div><div class="form-group"><label class="form-label">Stock Mínimo</label><input class="form-input" type="number" id="p-min" value="5" step="1"></div></div>
         <div class="modal-actions"><button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
       </form>`;
@@ -114,7 +123,9 @@ window.InventoryPage = {
   async openEdit(id) {
     const p = await API.get(`/api/products/${id}`);
     const rate = Store.getRate();
+    const costUsd = (p.cost_price || 0).toFixed(2);
     const costBs = (p.cost_price * rate).toFixed(2);
+    const priceUsd = (p.sell_price || 0).toFixed(2);
     const priceBs = (p.sell_price * rate).toFixed(2);
     const isWeight = p.sells_by_weight;
     document.getElementById('modal-body').innerHTML = `
@@ -122,37 +133,65 @@ window.InventoryPage = {
       <form onsubmit="InventoryPage.update(event,${id})">
         <div class="form-group" style="margin-bottom:12px"><label class="form-label">Nombre</label><input class="form-input" id="p-name" value="${p.name}" required></div>
         ${this._renderWeightFields(isWeight, p.unit || 'kg')}
-        <p style="color:var(--outline);font-size:11px;margin-bottom:8px">Ingrese los precios en Bolívares · Tasa BCV: ${rate.toFixed(2)} Bs/$</p>
-        <div class="form-row" style="margin-bottom:4px">
-          <div class="form-group"><label class="form-label">Costo (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-cost-bs" value="${costBs}" oninput="InventoryPage.convertPreview()"></div>
-          <div class="form-group"><label class="form-label">Precio Venta (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-price-bs" value="${priceBs}" required oninput="InventoryPage.convertPreview()"></div>
+        <p style="color:var(--outline);font-size:11px;margin-bottom:10px">Puedes colocar el precio en <strong>$ USD</strong> o en <strong>Bolívares (Bs.)</strong>. Se calculará automáticamente · Tasa BCV: <strong>${rate.toFixed(2)} Bs/$</strong></p>
+        
+        <div style="background:var(--surface-variant);padding:10px 12px;border-radius:var(--radius);margin-bottom:10px;border:1px solid var(--outline-variant)">
+          <div style="font-weight:600;font-size:11px;color:var(--outline);margin-bottom:6px">PRECIO DE COSTO</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Costo ($ USD)</label><input class="form-input" type="number" step="0.01" id="p-cost-usd" value="${costUsd}" oninput="InventoryPage.onCostUsdChange()"></div>
+            <div class="form-group"><label class="form-label">Costo (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-cost-bs" value="${costBs}" oninput="InventoryPage.onCostBsChange()"></div>
+          </div>
         </div>
-        <div id="usd-preview" style="display:flex;gap:16px;margin-bottom:12px;padding:6px 10px;background:rgba(0,200,255,0.05);border-radius:var(--radius);border:1px solid var(--outline-variant)">
-          <span style="font-size:11px;color:var(--outline);font-family:var(--font-mono)">Ref. Costo: $${p.cost_price.toFixed(2)}</span>
-          <span style="font-size:11px;color:var(--primary);font-family:var(--font-mono);font-weight:600">Ref. Venta: $${p.sell_price.toFixed(2)}</span>
+
+        <div style="background:rgba(0,224,255,0.03);padding:10px 12px;border-radius:var(--radius);margin-bottom:12px;border:1px solid rgba(0,224,255,0.2)">
+          <div style="font-weight:600;font-size:11px;color:var(--primary);margin-bottom:6px">PRECIO DE VENTA</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Precio Venta ($ USD)</label><input class="form-input" type="number" step="0.01" id="p-price-usd" value="${priceUsd}" required oninput="InventoryPage.onPriceUsdChange()"></div>
+            <div class="form-group"><label class="form-label">Precio Venta (Bs.)</label><input class="form-input" type="number" step="0.01" id="p-price-bs" value="${priceBs}" required oninput="InventoryPage.onPriceBsChange()"></div>
+          </div>
         </div>
+
         <div class="form-row" style="margin-bottom:12px"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" type="number" id="p-stock" value="${p.stock}" step="${isWeight?'0.001':'1'}"></div><div class="form-group"><label class="form-label">Stock Mínimo</label><input class="form-input" type="number" id="p-min" value="${p.min_stock}" step="${isWeight?'0.001':'1'}"></div></div>
         <div class="modal-actions"><button type="button" class="btn btn-ghost" onclick="App.closeModal()">Cancelar</button><button type="submit" class="btn btn-primary">Actualizar</button></div>
       </form>`;
     document.getElementById('modal-overlay').classList.remove('hidden');
   },
-  convertPreview() {
+  onCostUsdChange() {
     const rate = Store.getRate();
-    const costBs = parseFloat(document.getElementById('p-cost-bs')?.value) || 0;
-    const priceBs = parseFloat(document.getElementById('p-price-bs')?.value) || 0;
-    const costUsd = (costBs / rate).toFixed(2);
-    const priceUsd = (priceBs / rate).toFixed(2);
-    const el = document.getElementById('usd-preview');
-    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--outline);font-family:var(--font-mono)">Ref. Costo: $${costUsd}</span><span style="font-size:11px;color:var(--primary);font-family:var(--font-mono);font-weight:600">Ref. Venta: $${priceUsd}</span>`;
+    const usd = parseFloat(document.getElementById('p-cost-usd')?.value);
+    const bsEl = document.getElementById('p-cost-bs');
+    if (bsEl) bsEl.value = isNaN(usd) ? '' : (usd * rate).toFixed(2);
+  },
+  onCostBsChange() {
+    const rate = Store.getRate();
+    const bs = parseFloat(document.getElementById('p-cost-bs')?.value);
+    const usdEl = document.getElementById('p-cost-usd');
+    if (usdEl) usdEl.value = isNaN(bs) ? '' : (bs / rate).toFixed(2);
+  },
+  onPriceUsdChange() {
+    const rate = Store.getRate();
+    const usd = parseFloat(document.getElementById('p-price-usd')?.value);
+    const bsEl = document.getElementById('p-price-bs');
+    if (bsEl) bsEl.value = isNaN(usd) ? '' : (usd * rate).toFixed(2);
+  },
+  onPriceBsChange() {
+    const rate = Store.getRate();
+    const bs = parseFloat(document.getElementById('p-price-bs')?.value);
+    const usdEl = document.getElementById('p-price-usd');
+    if (usdEl) usdEl.value = isNaN(bs) ? '' : (bs / rate).toFixed(2);
   },
   async save(e) {
     e.preventDefault();
     try {
       const rate = Store.getRate();
-      const costBs = parseFloat(document.getElementById('p-cost-bs').value) || 0;
-      const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
-      const costUsd = Math.round((costBs / rate) * 100) / 100;
-      const priceUsd = Math.round((priceBs / rate) * 100) / 100;
+      const costUsdVal = parseFloat(document.getElementById('p-cost-usd')?.value);
+      const costBsVal = parseFloat(document.getElementById('p-cost-bs')?.value) || 0;
+      const costUsd = !isNaN(costUsdVal) ? Math.round(costUsdVal * 100) / 100 : Math.round((costBsVal / rate) * 100) / 100;
+
+      const priceUsdVal = parseFloat(document.getElementById('p-price-usd')?.value);
+      const priceBsVal = parseFloat(document.getElementById('p-price-bs')?.value) || 0;
+      const priceUsd = !isNaN(priceUsdVal) ? Math.round(priceUsdVal * 100) / 100 : Math.round((priceBsVal / rate) * 100) / 100;
+
       const sellsByWeight = document.getElementById('p-sells-by-weight')?.checked ? 1 : 0;
       const unit = sellsByWeight ? this._getSelectedUnit() : 'und';
       await API.post('/api/products', {
@@ -172,10 +211,14 @@ window.InventoryPage = {
     e.preventDefault();
     try {
       const rate = Store.getRate();
-      const costBs = parseFloat(document.getElementById('p-cost-bs').value) || 0;
-      const priceBs = parseFloat(document.getElementById('p-price-bs').value) || 0;
-      const costUsd = Math.round((costBs / rate) * 100) / 100;
-      const priceUsd = Math.round((priceBs / rate) * 100) / 100;
+      const costUsdVal = parseFloat(document.getElementById('p-cost-usd')?.value);
+      const costBsVal = parseFloat(document.getElementById('p-cost-bs')?.value) || 0;
+      const costUsd = !isNaN(costUsdVal) ? Math.round(costUsdVal * 100) / 100 : Math.round((costBsVal / rate) * 100) / 100;
+
+      const priceUsdVal = parseFloat(document.getElementById('p-price-usd')?.value);
+      const priceBsVal = parseFloat(document.getElementById('p-price-bs')?.value) || 0;
+      const priceUsd = !isNaN(priceUsdVal) ? Math.round(priceUsdVal * 100) / 100 : Math.round((priceBsVal / rate) * 100) / 100;
+
       const sellsByWeight = document.getElementById('p-sells-by-weight')?.checked ? 1 : 0;
       const unit = sellsByWeight ? this._getSelectedUnit() : 'und';
       await API.put(`/api/products/${id}`, {
